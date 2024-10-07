@@ -71,7 +71,10 @@ git clone https://github.com/turtlebot/turtlebot4.git -b jazzy
 
 echo -e "Downloading TurtleBot4 Jazzy Simulator..."
 git clone https://github.com/turtlebot/turtlebot4_simulator.git -b jazzy
-cd ..
+
+echo -e "Downloading TurtleBot4 Navigation2 Packages..."
+git clone https://github.com/ros-navigation/navigation2.git -b jazzy
+git clone https://github.com/ros-navigation/nav2_minimal_turtlebot_simulation
 
 echo -e "Installing base ROS packages..."
 locale  # check for UTF-8
