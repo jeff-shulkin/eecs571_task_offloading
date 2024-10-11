@@ -83,7 +83,7 @@ git clone https://github.com/ros-navigation/nav2_minimal_turtlebot_simulation
 echo -e "Installing base ROS packages..."
 locale  # check for UTF-8
 
-sudo apt update && sudo apt install locales
+sudo apt update -y && sudo apt install locales -y
 sudo locale-gen en_US en_US.UTF-8
 sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
@@ -92,7 +92,7 @@ locale  # verify settings
 
 # Enable Ubuntu Universe repo
 sudo apt install -y software-properties-common
-sudo add-apt-repository universe
+sudo add-apt-repository universe -y
 
 # Add ROS2 GPG key
 sudo apt update -y && sudo apt install curl -y
@@ -112,7 +112,7 @@ sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyr
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
 sudo apt-get update -y
 sudo apt-get install -y gz-harmonic
-sudo apt install -y ros-jazzy-ros-gz
+sudo apt-get install -y ros-jazzy-ros-gz
 
 # Build ROS2 packages
 rosdep init
