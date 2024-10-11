@@ -102,32 +102,7 @@ sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
 # Install ROS and development tools sudo apt update && sudo apt install -y \
-  libbullet-dev \
-  python3-pip \
-  python3-pytest-cov \
-  ros-dev-tools
-
-# install some pip packages needed for testing
-python3 -m pip install -U \
-  argcomplete \
-  flake8-blind-except \
-  flake8-builtins \
-  flake8-class-newline \
-  flake8-comprehensions \
-  flake8-deprecated \
-  flake8-docstrings \
-  flake8-import-order \
-  flake8-quotes \
-  pytest-repeat \
-  pytest-rerunfailures \
-  pytest
-# install Fast-RTPS dependencies
-sudo apt install --no-install-recommends -y \
-  libasio-dev \
-  libtinyxml2-dev
-# install Cyclone DDS dependencies
-sudo apt install --no-install-recommends -y \
-  libcunit1-dev
+sudo apt-get install -y ros-dev-tools
 
 # Install ROS-Jazzy with GUI tools
 sudo apt install -y ros-jazzy-desktop
@@ -136,6 +111,7 @@ sudo apt install -y ros-jazzy-desktop
 sudo apt install -y ros-jazzy-ros-gz
 
 # Build ROS2 packages
+rosdep init
 rosdep install --from-path src -yi
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install
