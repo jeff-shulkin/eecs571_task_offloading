@@ -15,54 +15,18 @@
 #include <cstdint>
 #include <iostream>
 
-ROS2Job::ROS2Job(int job_num, availableJobs curr_job, float curr_deadline):
-                num(job_num), job(curr_job), deadline_ms(curr_deadline) {
-		switch(curr_job) : {
-			case ROS2_DEBUG: {
-				func = std::function<void()> debug([] { cout << "Debug Message." << "\n";});
-			}
-
-			case NAV2_AMCL: {
-				func = std::function<void()> debug([] { cout << "Debug Message." << "\n";});
-			}
-
-			case NAV2_COSTMAP_2D: {
-				 func = std::function<void()> debug([] { cout << "Debug Message." << "\n";});
-			}
-		}
+void JobScheduler::add_job(ROS2Job j) {
+	fifo_sched_.push(j);
 }
 
-void taskScheduler::schedule(ROS2Job j) {
-	job_queue.push(j);
+void JobScheduler::remove_task(ROS2Job j) {
+	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
 }
 
-void taskScheduler::execute() {
+void JobScheduler::execute() {
 	ROS2Job curr_job = job_queue.pop();
-	
-}
-void taskScheduler::print_all_jobs() {
-	for (int i = 0; i < job_queue.size(); ++i) {
-		ROS2Job curr_job = job_queue.pop(); // retrieve current job
-		std::cout << "Job number: " << curr_job.num << "\n";
-		std::cout << "Job Type: " << curr_job.job << "\n";
-		std::cout << "Job Deadline: " << curr_job.deadline << "\n";
-	}
+	std::thread job_thread(curr_job.callback);
+        job_thread.join();
 }
 
-
-void sched_callback(ROS2Job j) {
-	std::cout << "Printing job number " << j.job_num << "\n";
-	std::cout << "EECS 571 has made me an alcoholic.\n";
-}
-
-int main() {
-	// Initialize task scheduler
-	taskScheduler sched;
-	for (int i = 0; i < 100; ++i) {
-		float deadline = 50.0; // 50 ms arbitrary deadline
-		Ros2Job debug = Ros2Job(i, availableJobs.ROS_DEBUG, deadline);
-		taskScheduler.job_queue.push_back(debug);
-		taskScheduler.execute();
-	}
-}
-#endif  // NAV2_COSTMAP_2D__COSTMAP_2D_ROS_CPP_
+#endif
