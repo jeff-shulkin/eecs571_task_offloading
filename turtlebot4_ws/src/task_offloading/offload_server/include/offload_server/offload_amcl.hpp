@@ -12,7 +12,7 @@ class OffloadAMCLActionServer
     {
         printf("AMCL Action Server Started!\n");
 
-        this->action_server_ = rclcpp_action::create_server<ActionHello>(
+        this->action_server_ = rclcpp_action::create_server<ActionOffloadAMCL>(
         node_handle->get_node_base_interface(),
         node_handle->get_node_clock_interface(),
         node_handle->get_node_logging_interface(),
@@ -25,7 +25,7 @@ class OffloadAMCLActionServer
 
     private:
     rclcpp_action::Server<Action>::SharedPtr action_server_;
-
+    // TODO: CHANGE HANDLE FUNCTIONS TO USE ACTUAL OFFLOAD_AMCL GOAL
     rclcpp_action::GoalResponse handle_goal(
         const rclcpp_action::GoalUUID & uuid,
         std::shared_ptr<const ActionHello::Goal> goal)
