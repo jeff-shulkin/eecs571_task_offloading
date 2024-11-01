@@ -89,14 +89,3 @@ class OffloadAMCLActionServer
     }
 };  // class ActionServer
 
-int main(int argc, char ** argv)
-{
-    rclcpp::init(argc, argv);
-
-    auto action_server = std::make_shared<ActionServer>();
-
-    rclcpp::spin(action_server);
-
-    rclcpp::shutdown();
-    return 0;
-}
