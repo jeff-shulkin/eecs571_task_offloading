@@ -28,7 +28,7 @@ class OffloadAMCLActionServer
     // TODO: CHANGE HANDLE FUNCTIONS TO USE ACTUAL OFFLOAD_AMCL GOAL
     rclcpp_action::GoalResponse handle_goal(
         const rclcpp_action::GoalUUID & uuid,
-        std::shared_ptr<const ActionHello::Goal> goal)
+        std::shared_ptr<const ActionOffloadAMCL::Goal> goal)
     {
         RCLCPP_INFO(this->get_logger(), "Received goal request with order %d", goal->request);
         (void)uuid;
@@ -58,8 +58,9 @@ class OffloadAMCLActionServer
         RCLCPP_INFO(this->get_logger(), "Executing goal");
         rclcpp::Rate loop_rate(1);
         const auto goal = goal_handle->get_goal();
-        auto feedback = std::make_shared<ActionHello::Feedback>();
-        auto result = std::make_shared<ActionHello::Result>();
+        auto feedback = std::make_shared<ActionOffloadAMCL::Feedback>();
+        auto result = std::make_shared<ActionOffloadAMCL::Result>();
+        printf("ActionOffloadAMCL Hello World!\n");
 
         for (int i = 1; (i <= goal->request) && rclcpp::ok(); ++i) {
         // Check if there is a cancel request
@@ -69,13 +70,13 @@ class OffloadAMCLActionServer
             RCLCPP_INFO(this->get_logger(), "Goal canceled");
             return;
         }
-        printf("ActionHello World!\n");
+        printf("ActionOffloadAMCL Hello World!\n");
 
         // Update sequence
-        feedback->feedback = i;
+        //feedback->feedback = i;
         // Publish feedback
-        goal_handle->publish_feedback(feedback);
-        RCLCPP_INFO(this->get_logger(), "Publish feedback");
+        //goal_handle->publish_feedback(feedback);
+        RCLCPP_INFO(this->get_logger(), "TODO: Publish feedback");
 
         loop_rate.sleep();
         }
@@ -87,5 +88,5 @@ class OffloadAMCLActionServer
         RCLCPP_INFO(this->get_logger(), "Goal succeeded");
         }
     }
-};  // class ActionServer
+};  // class OffloadAMCLActionServer
 
