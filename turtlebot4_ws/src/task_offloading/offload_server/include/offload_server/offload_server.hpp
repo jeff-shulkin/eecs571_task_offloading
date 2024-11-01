@@ -41,8 +41,7 @@
 #include "irobot_create_msgs/srv/e_stop.hpp"
 #include "irobot_create_msgs/srv/robot_power.hpp"
 
-#include "task_action_interfaces/actions/offload_amcl.hpp"
-#include "task_action_interfaces/actions/offload_amcl.hpp"
+#include "task_action_interfaces/action/OffloadAMCL.hpp"
 #include "offload_server/scheduler.hpp"
 
 /** Supported functions

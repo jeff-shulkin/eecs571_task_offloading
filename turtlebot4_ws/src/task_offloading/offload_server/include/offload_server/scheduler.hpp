@@ -10,19 +10,24 @@
 #include <string>
 #include <queue>
 #include <vector>
-#include <function>
+#include <functional>
 
 // ROS2 Libraries
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 
-enum class TaskType
+enum class TaskType {
+        DEBUG = 0,
+        OFFLOAD_AMCL = 1,
+        OFFLOAD_COSTMAP = 2
+};
+
 struct ROS2Job {
         std::string agent_id;
         TaskType task_id;
 	std::function<void (void)> callback;
         std::chrono::milliseconds deadline;
-}
+};
 
 class JobScheduler {
 
@@ -38,7 +43,6 @@ class JobScheduler {
                 rclcpp::TimerBase::SharedPtr wifi_timer_;
                 // All scheduler data structures
 		std::deque<ROS2Job> fifo_sched_;
-                std::vector<
 
 }; // JobScheduler
 

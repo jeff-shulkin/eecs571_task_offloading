@@ -24,7 +24,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "offload_server/offload_server_node.hpp"
+#include "offload_server/offload_server.hpp"
 #include "offload_server/utils.hpp"
 
 

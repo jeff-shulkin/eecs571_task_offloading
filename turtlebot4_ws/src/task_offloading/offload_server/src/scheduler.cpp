@@ -20,7 +20,7 @@ void JobScheduler::add_job(ROS2Job j) {
 }
 
 void JobScheduler::remove_task(ROS2Job j) {
-	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
+	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [j](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
 }
 
 void JobScheduler::execute() {
