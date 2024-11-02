@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-std=c++17 -Wall -Wextra -Wconversion -Wsign-conversion -Wshadow -Wpedantic)
+  add_compile_options(-std=c++17 -Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
@@ -37,6 +37,7 @@ include_directories(
 add_library(${PROJECT_NAME}_lib
   "src/main.cpp"
   "src/offload_agent.cpp"
+  "src/turtlebot4_functions.cpp"
 )
 
 set(DEPENDENCIES

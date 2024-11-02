@@ -61,7 +61,6 @@ namespace offload_server
 static constexpr auto LIDAR_5HZ_TIMER_DEADLINE_MS = 200;
 static constexpr auto LIDAR_10HZ_TIMER_DEADLINE_MS = 100;
 static constexpr auto WIFI_TIMER_LATENCY_DEADLINE_MS = 70; // TODO: ALTER WIFI DEADLINE BASED ON EXPERIENCE/MAKE VARIABLE
-
 class OffloadServer : public rclcpp::Node
 {
 

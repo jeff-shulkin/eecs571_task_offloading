@@ -35,7 +35,6 @@
 
 using namespace offload_server;
 using offload_server::OffloadServer;
-using AMCL = task_action_interfaces::action::Offloadamcl;
 //using Costmap = action_server_interfaces::action::OffloadCostmap;
 
 /**
@@ -43,8 +42,7 @@ using AMCL = task_action_interfaces::action::Offloadamcl;
  */
 OffloadServer::OffloadServer()
 : Node("offload_server_node",
-    rclcpp::NodeOptions().use_intra_process_comms(true)),
-    power_saver_(true)
+    rclcpp::NodeOptions().use_intra_process_comms(true))
 {
   RCLCPP_INFO(get_logger(), "Init Offload Server Node");
 
@@ -52,18 +50,18 @@ OffloadServer::OffloadServer()
   node_handle_ = std::shared_ptr<::rclcpp::Node>(this, [](::rclcpp::Node *) {});
 
   // ROS parameters
-  this->declare_parameter("sched_algo", [offload_server::ServerSchedAlgo::FIFO_QUEUE]);
+  this->declare_parameter("sched_algo", SchedAlgoName[ServerSchedulingAlgo::FIFO_QUEUE]);
   std::string algorithm = this->get_parameter("algo").as_string();
 
-  if (algorithm == offload_server::SchedAlgoName[offload_server::ServerSchedulingAlgo::FIFO_QUEUE]) {
+  if (algorithm == offload_server::SchedAlgoName[ServerSchedulingAlgo::FIFO_QUEUE]) {
     algo_ = offload_server::ServerSchedulingAlgo::FIFO_QUEUE;
-  } else if (algorithm == offload_server::SchedAlgoName[offload_server::ServerSchedulingAlgo::ROUND_ROBIN]) {
+  } else if (algorithm == offload_server::SchedAlgoName[ServerSchedulingAlgo::ROUND_ROBIN]) {
     algo_ = offload_server::ServerSchedulingAlgo::ROUND_ROBIN;
-  } else if (algorithm == offload_server::SchedAlgoName[offload_server::ServerSchedulingAlgo::RMS]) {
+  } else if (algorithm == offload_server::SchedAlgoName[ServerSchedulingAlgo::RMS]) {
     algo_ = offload_server::ServerSchedulingAlgo::RMS;
-  } else if (algorithm == offload_server::SchedAlgoName[offload_server::ServerSchedulingAlgo::EDF]) {
+  } else if (algorithm == offload_server::SchedAlgoName[ServerSchedulingAlgo::EDF]) {
     algo_ = offload_server::ServerSchedulingAlgo::EDF;
-  } else if (algorithm == SchedAlgoName[offload_server::ServerSchedulingAlgo::LSTF]) {
+  } else if (algorithm == offload_server::SchedAlgoName[ServerSchedulingAlgo::LSTF]) {
     algo_ = offload_server::ServerSchedulingAlgo::LSTF;
   } else {
     RCLCPP_ERROR(
@@ -72,6 +70,7 @@ OffloadServer::OffloadServer()
     return;
   }
 
+  RCLCPP_INFO(node_handle_->get_logger(), "Using Scheduling algorithm %s", algorithm.c_str());
   this->declare_parameter("wifi.interface", "wlan0");
   wifi_interface_ = this->get_parameter("wifi.interface").as_string();
 
@@ -79,11 +78,12 @@ OffloadServer::OffloadServer()
   power_saver_ = this->get_parameter("power_saver").as_bool();
 
   // ROS Action Servers
-  this->offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
-  this->get_node_base_interface(),
-  this->get_node_clock_interface(),
-  this->get_node_logging_interface(),
-  this->get_node_waitables_interface(),
+  offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
+//  this->get_node_base_interface(),
+//  this->get_node_clock_interface(),
+//  this->get_node_logging_interface(),
+//  this->get_node_waitables_interface(),
+  this,
   "offload_amcl",
   std::bind(&offload_server::OffloadServer::handle_offload_amcl_goal, this, std::placeholders::_1, std::placeholders::_2),
   std::bind(&offload_server::OffloadServer::handle_offload_amcl_cancel, this, std::placeholders::_1),
@@ -129,13 +129,11 @@ OffloadServer::OffloadServer()
 void OffloadServer::run()
 {
   RCLCPP_INFO(this->get_logger(), "Offload Server running.");
-  RCLCPP_DEBUG(this->get_logger(), "Offload Server using %s algo.", algo_.c_str());
 
   // Start scheduler with given scheduling algorithm
   //scheduler_.start();
 
-  wifi_timer(std::chrono::milliseconds(WIFI_TIMER_PERIOD));
-  //power_off_timer(std::chrono::milliseconds(
+  wifi_timer(std::chrono::milliseconds(WIFI_TIMER_LATENCY_DEADLINE_MS));
 }
 
 /**
@@ -155,13 +153,12 @@ void OffloadServer::wifi_timer(const std::chrono::milliseconds timeout)
       msg.data = ip;
       this->ip_pub_->publish(std::move(msg));
 
-        if (ip == std::string(UNKNOWN_IP)) {
-          RCLCPP_DEBUG(this->get_logger(), "IP unknown.");
-        }
+      if (ip == std::string(UNKNOWN_IP)) {
+        RCLCPP_INFO(this->get_logger(), "Unknown Server IP");
       }
+
     });
 }
-
 /**
  * @brief Callback for when a function call is executed
  */

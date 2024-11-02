@@ -28,6 +28,8 @@
 namespace offload_server
 {
 
+static constexpr auto UNKNOWN_IP = "UNKNOWN";
+
 enum class OffloadTaskStatus
 {
   UNKNOWN = 0,
@@ -59,6 +61,7 @@ static std::map<ServerSchedulingAlgo, std::string> SchedAlgoName
 
 typedef std::function<void (void)> offload_server_function_callback_t;
 typedef std::function<void (std::string)> offload_server_function_call_callback_t;
+
 
 }  // namespace offload_server
 

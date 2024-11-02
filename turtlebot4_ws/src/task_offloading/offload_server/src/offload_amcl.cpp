@@ -7,16 +7,14 @@
 #include "task_action_interfaces/action/offloadamcl.hpp"
 
 using namespace offload_server;
-using AMCL = task_action_interfaces::action::Offloadamcl;
-using GoalHandleOffloadAMCL = rclcpp_action::ServerGoalHandle<AMCL>;
 
 rclcpp_action::GoalResponse OffloadServer::handle_offload_amcl_goal(
     const rclcpp_action::GoalUUID & uuid,
-    std::shared_ptr<const AMCL::Goal> goal)
+    std::shared_ptr<const OffloadServer::AMCL::Goal> goal)
 {
-    RCLCPP_INFO(this->get_logger(), "Received goal request with order %d", goal->request);
+    RCLCPP_INFO(this->get_logger(), "Received goal request for robot %s", goal->robot_id.c_str());
     (void)uuid;
-    if (goal-> > 100) {
+    if (goal->stop_vs_start == false) {
     return rclcpp_action::GoalResponse::REJECT;
     }
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -34,22 +32,22 @@ void OffloadServer::handle_offload_amcl_accepted(const std::shared_ptr<GoalHandl
 {
     using namespace std::placeholders;
     // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-    std::thread{std::bind(&offload_server::OffloadServer::offload_amcl_execute, this, _1), goal_handle}.detach();
+    std::thread{std::bind(&OffloadServer::offload_amcl_execute, this, _1), goal_handle}.detach();
 }
 
-void OffloadServer::offload_amcl_execute(const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle)
+void OffloadServer::offload_amcl_execute(const std::shared_ptr<OffloadServer::GoalHandleOffloadAMCL> goal_handle)
 {
     RCLCPP_INFO(this->get_logger(), "Executing goal");
     rclcpp::Rate loop_rate(1);
     const auto goal = goal_handle->get_goal();
-    auto feedback = std::make_shared<AMCL::Feedback>();
-    auto result = std::make_shared<AMCL::Result>();
+    auto feedback = std::make_shared<OffloadServer::AMCL::Feedback>();
+    auto result = std::make_shared<OffloadServer::AMCL::Result>();
     printf("Offloading AMCL Hello World!\n");
 
-    for (int i = 1; (i <= goal->request) && rclcpp::ok(); ++i) {
+    for (int i = 1; rclcpp::ok(); ++i) {
     // Check if there is a cancel request
     if (goal_handle->is_canceling()) {
-        result->result = -1;
+        result->success = false;
         goal_handle->canceled(result);
         RCLCPP_INFO(this->get_logger(), "Goal canceled");
         return;
@@ -66,7 +64,7 @@ void OffloadServer::offload_amcl_execute(const std::shared_ptr<GoalHandleOffload
 
     // Check if goal is result
     if (rclcpp::ok()) {
-    result->result = 1;
+    result->success = true;
     goal_handle->succeed(result);
     RCLCPP_INFO(this->get_logger(), "Goal succeeded");
     }
