@@ -16,7 +16,7 @@
  * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
  */
 
-#ifndef OFFLOAD_SERVER_NODE__UTILS_HPP_
+#ifndef OFFLOAD_SERVER__NODE__UTILS_HPP_
 #define OFFLOAD_SERVER__NODE__UTILS_HPP_
 
 #include <string>
@@ -27,12 +27,6 @@
 
 namespace offload_server
 {
-
-static constexpr auto CREATE3_BUTTON_COUNT = 3;
-static constexpr auto HMI_BUTTON_COUNT = 4;
-static constexpr auto TOTAL_BUTTON_COUNT = 7;
-
-static constexpr auto UNKNOWN_IP = "UNKNOWN";
 
 enum class OffloadTaskStatus
 {

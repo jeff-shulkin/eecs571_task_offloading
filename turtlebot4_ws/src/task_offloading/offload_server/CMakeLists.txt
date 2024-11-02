@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wconversion -Wsign-conversion -Wshadow -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
@@ -38,6 +38,7 @@ include_directories(
 add_library(${PROJECT_NAME}_lib
   "src/main.cpp"
   "src/offload_server.cpp"
+  "src/offload_amcl.cpp"
   "src/scheduler.cpp"
 )
 

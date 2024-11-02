@@ -16,7 +16,7 @@
 #include <iostream>
 
 void JobScheduler::add_job(ROS2Job j) {
-	fifo_sched_.push(j);
+	fifo_sched_.push_back(j);
 }
 
 void JobScheduler::remove_task(ROS2Job j) {
@@ -24,7 +24,8 @@ void JobScheduler::remove_task(ROS2Job j) {
 }
 
 void JobScheduler::execute() {
-	ROS2Job curr_job = job_queue.pop();
+	ROS2Job curr_job = fifo_sched_.front();
+        fifo_sched_.pop_front();
 	std::thread job_thread(curr_job.callback);
         job_thread.join();
 }

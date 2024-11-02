@@ -26,7 +26,9 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <std_srvs/srv/trigger.hpp>
@@ -41,8 +43,9 @@
 #include "irobot_create_msgs/srv/e_stop.hpp"
 #include "irobot_create_msgs/srv/robot_power.hpp"
 
-#include "task_action_interfaces/action/OffloadAMCL.hpp"
+#include "task_action_interfaces/action/offloadamcl.hpp"
 #include "offload_server/scheduler.hpp"
+#include "offload_server/utils.hpp"
 
 /** Supported functions
  * Offload AMCL
@@ -54,13 +57,17 @@ namespace offload_server
 {
 
 // Timer Periods
-# TODO: DEFINE FURTHER TIMER DEADLINES
+// TODO: DEFINE FURTHER TIMER DEADLINES
 static constexpr auto LIDAR_5HZ_TIMER_DEADLINE_MS = 200;
 static constexpr auto LIDAR_10HZ_TIMER_DEADLINE_MS = 100;
 static constexpr auto WIFI_TIMER_LATENCY_DEADLINE_MS = 70; // TODO: ALTER WIFI DEADLINE BASED ON EXPERIENCE/MAKE VARIABLE
 
 class OffloadServer : public rclcpp::Node
 {
+
+using AMCL = task_action_interfaces::action::Offloadamcl;
+using GoalHandleOffloadAMCL = rclcpp_action::ServerGoalHandle<AMCL>;
+
 public:
   // Constructor and Destructor
   OffloadServer();
@@ -71,7 +78,7 @@ private:
 
   // Subscription callbacks
   void battery_callback(const sensor_msgs::msg::BatteryState::SharedPtr battery_state_msg);
-  void laser_scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr laser_scan_msg);
+  void laser_scan_callback(const sensor_msgs::msg::LaserScan::ConstSharedPtr laser_scan_msg);
 
   // Function callbacks
   void offload_amcl_function_callback();
@@ -89,6 +96,18 @@ private:
   // Run power off timer
   void power_off_timer(const std::chrono::milliseconds timeout);
 
+  // Callback functions for offload AMCL action server
+  rclcpp_action::GoalResponse handle_offload_amcl_goal(
+      const rclcpp_action::GoalUUID & uuid,
+      std::shared_ptr<const AMCL::Goal> goal);
+
+  rclcpp_action::CancelResponse handle_offload_amcl_cancel(
+      const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle);
+
+  void handle_offload_amcl_accepted(const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle);
+
+  void offload_amcl_execute(const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle);
+
   // IP
   std::string get_ip();
   std::string wifi_interface_;
@@ -100,8 +119,8 @@ private:
   std::map<std::string, offload_server_function_callback_t> function_callbacks_;
 
   // Action Servers
-  rclcpp_action::Server<Action offload_amcl_action_server_;
-  OffloadCostmapActionServer offload_costmap_action_server_;
+  rclcpp_action::Server<AMCL> offload_amcl_action_server_;
+  //rclcpp_action::Server<Action> offload_costmap_action_server_;
 
   // Timers
   rclcpp::TimerBase::SharedPtr amcl_timer_;
@@ -111,7 +130,7 @@ private:
 
   // Subscribers
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::ConstSharedPtr laser_scan_sub_;
 
   // Publishers
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;

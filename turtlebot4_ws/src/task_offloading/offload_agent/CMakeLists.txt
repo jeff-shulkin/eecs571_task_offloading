@@ -51,6 +51,7 @@ set(DEPENDENCIES
   "turtlebot4_msgs"
   "turtlebot4_navigation"
   "turtlebot4_node"
+  "task_action_interfaces"
 )
 
 ament_target_dependencies(${PROJECT_NAME}_lib ${DEPENDENCIES})

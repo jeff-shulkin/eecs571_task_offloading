@@ -32,7 +32,7 @@ struct ROS2Job {
 class JobScheduler {
 
 	public:
-		void add_job();
+		void add_job(ROS2Job j);
 		void remove_task(ROS2Job j);
 		void execute();
 		void print_all_jobs();
