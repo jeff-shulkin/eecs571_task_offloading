@@ -25,7 +25,6 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "offload_agent/offload_agent.hpp"
-#include "offload_agent/utils.hpp"
 
 int main(int argc, char * argv[])
 {

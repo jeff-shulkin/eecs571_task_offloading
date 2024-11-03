@@ -17,7 +17,14 @@
  */
 
 #include "offload_agent/offload_agent.hpp"
-#include "turtlebot4_node/turtlebot4.hpp"
+#include <turtlebot4_node/turtlebot4.hpp>
+#include <turtlebot4_node/action.hpp>
+#include <turtlebot4_node/leds.hpp>
+#include <turtlebot4_node/display.hpp>
+#include <turtlebot4_node/service.hpp>
+#include <turtlebot4_node/utils.hpp>
+#include "task_action_interfaces/action/offloadamcl.hpp"
+
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -33,8 +40,11 @@
 #include <vector>
 #include <utility>
 
+using namespace turtlebot4;
+
 using offload_agent::OffloadAgent;
 using turtlebot4::Turtlebot4;
+using turtlebot4::Leds;
 using Dock = irobot_create_msgs::action::Dock;
 using Undock = irobot_create_msgs::action::Undock;
 using WallFollow = irobot_create_msgs::action::WallFollow;
@@ -79,7 +89,7 @@ OffloadAgent::OffloadAgent()
   power_saver_ = this->get_parameter("power_saver").as_bool();
 
   button_parameters_ = {
-    {turtlebot4::CREATE3_1, "buttons.create3_1"w},
+    {turtlebot4::CREATE3_1, "buttons.create3_1"},
     {turtlebot4::CREATE3_POWER, "buttons.create3_power"},
     {turtlebot4::CREATE3_2, "buttons.create3_2"},
     {turtlebot4::CONTROLLER_A, "controller.a"},

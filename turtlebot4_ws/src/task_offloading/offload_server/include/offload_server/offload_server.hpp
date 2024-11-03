@@ -64,12 +64,13 @@ static constexpr auto WIFI_TIMER_LATENCY_DEADLINE_MS = 70; // TODO: ALTER WIFI D
 class OffloadServer : public rclcpp::Node
 {
 
-using AMCL = task_action_interfaces::action::Offloadamcl;
-using GoalHandleOffloadAMCL = rclcpp_action::ServerGoalHandle<AMCL>;
-
 public:
+
+  using AMCL = task_action_interfaces::action::Offloadamcl;
+  using GoalHandleOffloadAMCL = rclcpp_action::ServerGoalHandle<AMCL>;
+
   // Constructor and Destructor
-  OffloadServer();
+  explicit OffloadServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
   virtual ~OffloadServer() {}
 
 private:

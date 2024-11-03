@@ -1,8 +1,34 @@
-#include "offload_agent/offload_agent.hpp"
 
+#ifndef OFFLOAD_AGENT_TURTLEFUNC__HPP_
+#define OFFLOAD_AGENT_TURTLEFUNC__HPP_
+
+#include "offload_agent/offload_agent.hpp"
+#include <turtlebot4_node/turtlebot4.hpp>
+#include <turtlebot4_node/action.hpp>
+#include <turtlebot4_node/leds.hpp>
+#include <turtlebot4_node/display.hpp>
+#include <turtlebot4_node/service.hpp>
+#include <turtlebot4_node/utils.hpp>
+#include "task_action_interfaces/action/offloadamcl.hpp"
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <arpa/inet.h>
+
+#include <chrono>
+#include <memory>
+#include <string>
+#include <thread>
+#include <vector>
+#include <utility>
 
 using namespace turtlebot4;
-
+using turtlebot4::Leds;
+using turtlebot4::Display;
+using namespace offload_agent;
 /**
  * @brief Creates and runs timer to update display
  * @input timeout - Sets timer period in milliseconds
@@ -442,18 +468,18 @@ void OffloadAgent::add_button_function_callbacks()
     if (function_callbacks_.find(button.short_function_) != function_callbacks_.end()) {
       button.short_cb_ = function_callbacks_[button.short_function_];
     } else {
-      button.short_cb_ = std::bind(&Turtlebot4::unused_function_callback, this);
+      button.short_cb_ = std::bind(&OffloadAgent::unused_function_callback, this);
     }
 
     // Long press function
     if (function_callbacks_.find(button.long_function_) != function_callbacks_.end()) {
       button.long_cb_ = function_callbacks_[button.long_function_];
     } else {
-      button.long_cb_ = std::bind(&Turtlebot4::unused_function_callback, this);
+      button.long_cb_ = std::bind(&OffloadAgent::unused_function_callback, this);
     }
 
     button.function_call_cb_ = std::bind(
-      &Turtlebot4::function_call_callback, this,
+      &OffloadAgent::function_call_callback, this,
       std::placeholders::_1);
   }
 }
@@ -468,10 +494,10 @@ void OffloadAgent::add_menu_function_callbacks()
     if (function_callbacks_.find(entry.name_) != function_callbacks_.end()) {
       entry.cb_ = function_callbacks_[entry.name_];
     } else {
-      entry.cb_ = std::bind(&Turtlebot4::unused_function_callback, this);
+      entry.cb_ = std::bind(&OffloadAgent::unused_function_callback, this);
     }
     entry.function_call_cb_ = std::bind(
-      &Turtlebot4::function_call_callback, this,
+      &OffloadAgent::function_call_callback, this,
       std::placeholders::_1);
   }
 }
@@ -511,3 +537,5 @@ std::string OffloadAgent::get_ip()
   }
   return std::string(UNKNOWN_IP);
 }
+
+#endif

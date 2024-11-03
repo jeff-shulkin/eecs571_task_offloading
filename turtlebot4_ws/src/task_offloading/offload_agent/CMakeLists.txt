@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 project(offload_agent)
 
 # Set default C++ version at C++17
@@ -35,9 +35,9 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME}_lib
-  "src/main.cpp"
-  "src/offload_agent.cpp"
   "src/turtlebot4_functions.cpp"
+  "src/offload_agent.cpp"
+  "src/main.cpp"
 )
 
 set(DEPENDENCIES

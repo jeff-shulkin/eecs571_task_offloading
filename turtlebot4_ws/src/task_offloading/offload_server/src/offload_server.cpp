@@ -19,6 +19,7 @@
 #include "offload_server/offload_server.hpp"
 #include "offload_server/utils.hpp"
 
+#include <rclcpp/rclcpp.hpp>
 #include <stdio.h>
 #include <sys/types.h>
 #include <ifaddrs.h>
@@ -40,9 +41,8 @@ using offload_server::OffloadServer;
 /**
  * @brief OffloadServer Node constructor
  */
-OffloadServer::OffloadServer()
-: Node("offload_server_node",
-    rclcpp::NodeOptions().use_intra_process_comms(true))
+OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
+: Node("offload_server_node", options)
 {
   RCLCPP_INFO(get_logger(), "Init Offload Server Node");
 
@@ -78,7 +78,7 @@ OffloadServer::OffloadServer()
   power_saver_ = this->get_parameter("power_saver").as_bool();
 
   // ROS Action Servers
-  offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
+  this->offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
 //  this->get_node_base_interface(),
 //  this->get_node_clock_interface(),
 //  this->get_node_logging_interface(),

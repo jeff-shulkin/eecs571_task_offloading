@@ -13,8 +13,13 @@
 #include <std_srvs/srv/empty.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
-#include "turtlebot4_node/turtlebot4.hpp"
-#include "task_action_interfaces/action/offloadamcl.hpp"
+#include <turtlebot4_node/turtlebot4.hpp>
+#include <turtlebot4_node/action.hpp>
+#include <turtlebot4_node/leds.hpp>
+#include <turtlebot4_node/display.hpp>
+#include <turtlebot4_node/service.hpp>
+#include <turtlebot4_node/utils.hpp>
+#include <task_action_interfaces/action/offloadamcl.hpp>
 
 /** Supported functions
  * Dock
@@ -67,6 +72,8 @@ private:
     const sensor_msgs::msg::Joy::SharedPtr joy_msg);
 
   // Function callbacks
+  void offload_amcl_function_callback();
+
   void dock_function_callback();
   void undock_function_callback();
   void wall_follow_left_function_callback();
@@ -174,7 +181,6 @@ private:
 
   // Turtlebot4 Model
   turtlebot4::Turtlebot4Model model_;
-};
 
 };
 
