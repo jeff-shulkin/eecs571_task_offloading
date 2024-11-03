@@ -20,6 +20,8 @@
 #include "offload_server/utils.hpp"
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <rclcpp_components/register_node_macro.hpp>
 #include <stdio.h>
 #include <sys/types.h>
 #include <ifaddrs.h>
@@ -204,4 +206,16 @@ std::string OffloadServer::get_ip()
     freeifaddrs(ifAddrStruct);
   }
   return std::string(UNKNOWN_IP);
+}
+
+void OffloadServer::battery_callback(std::shared_ptr<sensor_msgs::msg::BatteryState> msg) {
+	RCLCPP_INFO(this->get_logger(), "Battery callback triggered");
+	(void)msg;
+    // Handle battery state
+}
+
+void OffloadServer::laser_scan_callback(std::shared_ptr<const sensor_msgs::msg::LaserScan> msg) {
+	RCLCPP_INFO(this->get_logger(), "Laser scan callback triggered");
+	(void)msg;
+    // Handle laser scan data
 }

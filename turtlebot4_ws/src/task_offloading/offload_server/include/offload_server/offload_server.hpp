@@ -119,7 +119,7 @@ private:
   std::map<std::string, offload_server_function_callback_t> function_callbacks_;
 
   // Action Servers
-  rclcpp_action::Server<AMCL> offload_amcl_action_server_;
+  rclcpp_action::Server<AMCL>::SharedPtr offload_amcl_action_server_;
   //rclcpp_action::Server<Action> offload_costmap_action_server_;
 
   // Timers
