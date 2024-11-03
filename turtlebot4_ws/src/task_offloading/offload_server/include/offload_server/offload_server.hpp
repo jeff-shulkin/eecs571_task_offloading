@@ -27,6 +27,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
+#include <rclcpp_components/register_node_macro.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -120,7 +121,7 @@ private:
 
   // Action Servers
   rclcpp_action::Server<AMCL>::SharedPtr offload_amcl_action_server_;
-  //rclcpp_action::Server<Action> offload_costmap_action_server_;
+  //rclcpp_action::Server<Action>::SharedPtr offload_costmap_action_server_;
 
   // Timers
   rclcpp::TimerBase::SharedPtr amcl_timer_;
