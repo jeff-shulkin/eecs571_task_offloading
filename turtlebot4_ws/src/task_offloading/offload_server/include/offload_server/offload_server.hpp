@@ -149,4 +149,6 @@ private:
 
 }  // namespace offload_server
 
+RCLCPP_COMPONENTS_REGISTER_NODE(offload_server::OffloadServer)
+
 #endif  // OFFLOAD_SERVER_NODE__HPP_

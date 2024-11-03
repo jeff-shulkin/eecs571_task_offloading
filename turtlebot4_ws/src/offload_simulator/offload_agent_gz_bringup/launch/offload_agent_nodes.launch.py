@@ -39,14 +39,22 @@ def generate_launch_description():
     pkg_offload_agent_gz_bringup = get_package_share_directory('offload_agent_gz_bringup')
 
     # Parameters
-    param_file_cmd = DeclareLaunchArgument(
-        'param_file',
+    agent_param_file_cmd = DeclareLaunchArgument(
+        'agent_param_file',
         default_value=PathJoinSubstitution(
             [pkg_offload_agent_gz_bringup, 'config', 'offload_agent_node.yaml']),
         description='Offload Agent Turtlebot4 param file'
     )
 
-    offload_agent_node_yaml_file = LaunchConfiguration('param_file')
+    server_param_file_cmd = DeclareLaunchArgument(
+        'server_param_file',
+        default_value=PathJoinSubstitution(
+            [pkg_offload_agent_gz_bringup, 'config', 'offload_server_node.yaml']),
+        description='Offload Server param file'
+    )
+
+    offload_agent_node_yaml_file = LaunchConfiguration('agent_param_file')
+    offload_server_node_yaml_file = LaunchConfiguration('server_param_file')
 
     # Turtlebot4 node
     offload_agent_node = Node(
@@ -77,7 +85,8 @@ def generate_launch_description():
 
     # Define LaunchDescription variable
     ld = LaunchDescription(ARGUMENTS)
-    ld.add_action(param_file_cmd)
+    ld.add_action(server_param_file_cmd)
+    ld.add_action(agent_param_file_cmd)
     ld.add_action(offload_server_node)
     ld.add_action(offload_agent_node)
     ld.add_action(offload_agent_gz_hmi_node)

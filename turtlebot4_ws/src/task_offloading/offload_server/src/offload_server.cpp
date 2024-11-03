@@ -81,11 +81,10 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
 
   // ROS Action Servers
   this->offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
-//  this->get_node_base_interface(),
-//  this->get_node_clock_interface(),
-//  this->get_node_logging_interface(),
-//  this->get_node_waitables_interface(),
-  this,
+  this->get_node_base_interface(),
+  this->get_node_clock_interface(),
+  this->get_node_logging_interface(),
+  this->get_node_waitables_interface(),
   "offload_amcl",
   std::bind(&offload_server::OffloadServer::handle_offload_amcl_goal, this, std::placeholders::_1, std::placeholders::_2),
   std::bind(&offload_server::OffloadServer::handle_offload_amcl_cancel, this, std::placeholders::_1),
