@@ -54,6 +54,13 @@ def generate_launch_description():
         output='screen',
     )
 
+    offload_server_node = Node(
+        package='offload_server',
+        name='offload_server',
+        executable='offload_server',
+        output='screen',
+    )
+
     # Turtlebot4 Gazebo Hmi node
     offload_agent_gz_hmi_node = Node(
         package='turtlebot4_gz_toolbox',
