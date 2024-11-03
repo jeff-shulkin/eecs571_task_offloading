@@ -25,7 +25,11 @@ from launch_ros.actions import Node
 ARGUMENTS = [
     DeclareLaunchArgument('model', default_value='standard',
                           choices=['standard', 'lite'],
-                          description='Turtlebot4 Model')
+                          description='Turtlebot4 Model'),
+
+    DeclareLaunchArgument('algo', default_value='fifo',
+                          choices=['fifo', 'round_robin', 'rms', 'edf', 'lstf'],
+                          description='Offload Server Scheduling Algorithm'),
 ]
 
 
@@ -58,6 +62,7 @@ def generate_launch_description():
         package='offload_server',
         name='offload_server',
         executable='offload_server',
+        parameters=[{'algo': LaunchConfiguration('algo')}],
         output='screen',
     )
 
@@ -73,6 +78,7 @@ def generate_launch_description():
     # Define LaunchDescription variable
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(param_file_cmd)
+    ld.add_action(offload_server_node)
     ld.add_action(offload_agent_node)
     ld.add_action(offload_agent_gz_hmi_node)
     return ld

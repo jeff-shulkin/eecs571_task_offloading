@@ -33,6 +33,9 @@ ARGUMENTS = [
     DeclareLaunchArgument('model', default_value='standard',
                           choices=['standard', 'lite'],
                           description='Turtlebot4 Model'),
+    DeclareLaunchArgument('algo', default_value='fifo',
+                          choices=['fifo', 'round_robin', 'rms', 'edf', 'lstf'],
+                          description='Offload Server Scheduling Algorithm'),
 ]
 
 for pose_element in ['x', 'y', 'z', 'yaw']:

@@ -52,7 +52,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   node_handle_ = std::shared_ptr<::rclcpp::Node>(this, [](::rclcpp::Node *) {});
 
   // ROS parameters
-  this->declare_parameter("sched_algo", SchedAlgoName[ServerSchedulingAlgo::FIFO_QUEUE]);
+  this->declare_parameter("algo", SchedAlgoName[ServerSchedulingAlgo::FIFO_QUEUE]);
   std::string algorithm = this->get_parameter("algo").as_string();
 
   if (algorithm == offload_server::SchedAlgoName[ServerSchedulingAlgo::FIFO_QUEUE]) {
