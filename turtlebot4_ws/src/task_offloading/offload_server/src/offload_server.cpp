@@ -76,11 +76,14 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   this->declare_parameter("wifi.interface", "wlan0");
   wifi_interface_ = this->get_parameter("wifi.interface").as_string();
 
-  this->declare_parameter("power_saver", true);
-  power_saver_ = this->get_parameter("power_saver").as_bool();
+  RCLCPP_INFO(node_handle_->get_logger(), "AFTER WIFI: FUCK YOU");
 
+  //this->declare_parameter("power_saver", true);
+  //power_saver_ = this->get_parameter("power_saver").as_bool();
+
+  //RCLCPP_INFO(node_handle_->get_logger(), "AFTER POWER: FUCK YOU");
   // ROS Action Servers
-  this->offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
+  offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
   this->get_node_base_interface(),
   this->get_node_clock_interface(),
   this->get_node_logging_interface(),
@@ -90,6 +93,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   std::bind(&offload_server::OffloadServer::handle_offload_amcl_cancel, this, std::placeholders::_1),
   std::bind(&offload_server::OffloadServer::handle_offload_amcl_accepted, this, std::placeholders::_1));
 
+  RCLCPP_INFO(node_handle_->get_logger(), "Offload_amcl action server instantiated");
   // TODO: ADD BACK IN COSTMAP ACTION SERVER WHEN READY
   //this->offload_costmap_action_server_ = rclcpp::create_serer<AMCL>(
   //this->get_node_base_interface(),

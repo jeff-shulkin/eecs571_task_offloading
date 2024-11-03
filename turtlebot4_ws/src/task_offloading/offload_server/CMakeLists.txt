@@ -59,7 +59,7 @@ set(DEPENDENCIES
 
 ament_target_dependencies(${PROJECT_NAME}_lib ${DEPENDENCIES})
 
-set(EXECUTABLE_NAME "offload_server_node")
+set(EXECUTABLE_NAME "offload_server")
 
 add_executable(${EXECUTABLE_NAME} src/main.cpp)
 target_link_libraries(${EXECUTABLE_NAME} ${PROJECT_NAME}_lib)

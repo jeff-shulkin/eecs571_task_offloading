@@ -1,0 +1,5 @@
+/**:
+  offload_agent:
+    ros__parameters:
+      wifi:
+        interface: "wlan0"
