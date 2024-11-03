@@ -1,5 +1,23 @@
-#ifndef OFFLOAD_AGENT_NODE_HPP_
-#define OFFLOAD_AGENT_NODE_HPP_
+/*
+ * Copyright 2021 Clearpath Robotics, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * @author Roni Kreinin (rkreinin@clearpathrobotics.com)
+ */
+
+#ifndef TURTLEBOT4_NODE__TURTLEBOT4_HPP_
+#define TURTLEBOT4_NODE__TURTLEBOT4_HPP_
 
 #include <chrono>
 #include <map>
@@ -13,13 +31,25 @@
 #include <std_srvs/srv/empty.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
-#include <turtlebot4_node/turtlebot4.hpp>
-#include <turtlebot4_node/action.hpp>
-#include <turtlebot4_node/leds.hpp>
-#include <turtlebot4_node/display.hpp>
-#include <turtlebot4_node/service.hpp>
-#include <turtlebot4_node/utils.hpp>
-#include <task_action_interfaces/action/offloadamcl.hpp>
+#include "turtlebot4_node/action.hpp"
+#include "turtlebot4_node/service.hpp"
+#include "turtlebot4_node/display.hpp"
+#include "turtlebot4_node/buttons.hpp"
+#include "turtlebot4_node/leds.hpp"
+#include "turtlebot4_node/utils.hpp"
+
+#include "irobot_create_msgs/msg/wheel_status.hpp"
+#include "irobot_create_msgs/msg/lightring_leds.hpp"
+#include "irobot_create_msgs/msg/dock_status.hpp"
+#include "irobot_create_msgs/action/undock.hpp"
+#include "irobot_create_msgs/action/dock.hpp"
+#include "irobot_create_msgs/action/wall_follow.hpp"
+#include "irobot_create_msgs/action/led_animation.hpp"
+#include "irobot_create_msgs/srv/e_stop.hpp"
+#include "irobot_create_msgs/srv/robot_power.hpp"
+
+#include "task_action_interfaces/action/offloadamcl.hpp"
+
 
 /** Supported functions
  * Dock
@@ -29,7 +59,7 @@
  * EStop
  */
 
-namespace offload_agent
+namespace turtlebot4
 {
 
 // Timer Periods
@@ -40,7 +70,7 @@ static constexpr auto LEDS_TIMER_PERIOD = 50;
 static constexpr auto POWER_OFF_TIMER_PERIOD = 60000;
 static constexpr auto WIFI_TIMER_PERIOD = 5000;
 
-class OffloadAgent : public rclcpp::Node
+class Turtlebot4 : public rclcpp::Node
 {
 public:
   // Type alias for actions and services
@@ -56,13 +86,13 @@ public:
   using TriggerSrv = std_srvs::srv::Trigger;
 
   // Constructor and Destructor
-  OffloadAgent();
-  virtual ~OffloadAgent() {}
+  Turtlebot4();
+  virtual ~Turtlebot4() {}
 
 private:
   void run();
 
- // Subscription callbacks
+  // Subscription callbacks
   void battery_callback(const sensor_msgs::msg::BatteryState::SharedPtr battery_state_msg);
   void dock_status_callback(
     const irobot_create_msgs::msg::DockStatus::SharedPtr dock_status_msg);
@@ -73,7 +103,7 @@ private:
 
   // Function callbacks
   void offload_amcl_function_callback();
-
+  //void offload_costmap_function_callback();
   void dock_function_callback();
   void undock_function_callback();
   void wall_follow_left_function_callback();
@@ -123,35 +153,35 @@ private:
   rclcpp::Node::SharedPtr node_handle_;
 
   // Turtlebot4 Functions
-  std::vector<turtlebot4::Turtlebot4Button> turtlebot4_buttons_;
-  std::vector<turtlebot4::Turtlebot4MenuEntry> turtlebot4_menu_entries_;
-  std::map<std::string, turtlebot4::turtlebot4_function_callback_t> function_callbacks_;
-  std::map<turtlebot4::Turtlebot4ButtonEnum, std::string> button_parameters_;
+  std::vector<Turtlebot4Button> turtlebot4_buttons_;
+  std::vector<Turtlebot4MenuEntry> turtlebot4_menu_entries_;
+  std::map<std::string, turtlebot4_function_callback_t> function_callbacks_;
+  std::map<Turtlebot4ButtonEnum, std::string> button_parameters_;
 
   // Display
-  std::unique_ptr<turtlebot4::Display> display_;
+  std::unique_ptr<Display> display_;
 
   // Buttons
-  std::unique_ptr<turtlebot4::Buttons> buttons_;
+  std::unique_ptr<Buttons> buttons_;
 
   // Leds
-  std::unique_ptr<turtlebot4::Leds> leds_;
+  std::unique_ptr<Leds> leds_;
 
   // Actions
-  std::unique_ptr<turtlebot4::Turtlebot4Action<AMCL>> offload_amcl_client_;
-  //std::unique_ptr<turtlebot4::Turtlebot4Action<Costmap>> offload_costmap_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4Action<Dock>> dock_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4Action<Undock>> undock_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4Action<WallFollow>> wall_follow_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4Action<LedAnimation>> led_animation_client_;
+  std::unique_ptr<Turtlebot4Action<AMCL>> offload_amcl_client_;
+  //std::unique_ptr<Turtlebot4Action<Costmap>> offload_costmap_client_;
+  std::unique_ptr<Turtlebot4Action<Dock>> dock_client_;
+  std::unique_ptr<Turtlebot4Action<Undock>> undock_client_;
+  std::unique_ptr<Turtlebot4Action<WallFollow>> wall_follow_client_;
+  std::unique_ptr<Turtlebot4Action<LedAnimation>> led_animation_client_;
 
   // Services
-  std::unique_ptr<turtlebot4::Turtlebot4Service<EStop>> estop_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4Service<Power>> power_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4EmptyService<EmptySrv>> rplidar_start_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4EmptyService<EmptySrv>> rplidar_stop_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4Service<TriggerSrv>> oakd_start_client_;
-  std::unique_ptr<turtlebot4::Turtlebot4Service<TriggerSrv>> oakd_stop_client_;
+  std::unique_ptr<Turtlebot4Service<EStop>> estop_client_;
+  std::unique_ptr<Turtlebot4Service<Power>> power_client_;
+  std::unique_ptr<Turtlebot4EmptyService<EmptySrv>> rplidar_start_client_;
+  std::unique_ptr<Turtlebot4EmptyService<EmptySrv>> rplidar_stop_client_;
+  std::unique_ptr<Turtlebot4Service<TriggerSrv>> oakd_start_client_;
+  std::unique_ptr<Turtlebot4Service<TriggerSrv>> oakd_stop_client_;
 
   // Timers
   rclcpp::TimerBase::SharedPtr display_timer_;
@@ -180,10 +210,9 @@ private:
   bool power_saver_;
 
   // Turtlebot4 Model
-  turtlebot4::Turtlebot4Model model_;
-
+  Turtlebot4Model model_;
 };
 
-}  // namespace offload_agent
+}  // namespace turtlebot4
 
-#endif  // OFFLOAD_AGENT_NODE_HPP_
+#endif  // TURTLEBOT4_NODE__TURTLEBOT4_HPP_
