@@ -20,13 +20,12 @@ uint16 TIMEOUT=207
 uint16 NO_VALID_PATH=208
 
 bool success
-
+geometry_msgs/PoseWithCovarianceStamped resulting_pose # Pose returned by offload_amcl
 # For result, add in the particle cloud and 
 
 ---
 #feedback definition
 # For feedback, we want the pose and particleCloud if available
-
 bool in_progress
 string error_msg
 

@@ -1,0 +1,8 @@
+# Goal definition: send over laserScan
+string robot_id
+sensor_msgs/LaserScan laser_scan
+int32 deadline_ms
+----
+nav2_msgs/OccupancyGrid costmap
+----
+# TODO: ADD FEEDBACK
