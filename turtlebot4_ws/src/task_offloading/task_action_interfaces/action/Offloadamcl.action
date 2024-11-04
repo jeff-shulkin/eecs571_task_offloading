@@ -1,6 +1,7 @@
 #goal definition
 string robot_id
 bool stop_vs_start # If false, use current robot pose as path start, if true, use start above instead
+geometry_msgs/PoseWithCovarianceStamped initial_pose # Initial pose of the robot with uncertainty information
 int32 deadline_ms # deadline for AMCL in milliseconds. Can be either 100/200 ms (LiDAR 10 Hz vs 5 Hz)
 ---
 #result definition
@@ -20,9 +21,13 @@ uint16 NO_VALID_PATH=208
 
 bool success
 
+# For result, add in the particle cloud and 
+
 ---
 #feedback definition
 # For feedback, we want the pose and particleCloud if available
 
 bool in_progress
 string error_msg
+
+# Add in the 

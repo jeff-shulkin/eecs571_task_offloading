@@ -21,8 +21,11 @@ find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(irobot_create_msgs REQUIRED)
+find_package(bondcpp REQUIRED)
 
+find_package(nav_msgs REQUIRED)
 find_package(nav2_common REQUIRED)
+find_package(nav2_msgs REQUIRED)
 find_package(nav2_amcl REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 
@@ -51,7 +54,10 @@ set(DEPENDENCIES
   "std_srvs"
   "sensor_msgs"
   "irobot_create_msgs"
+  "bondcpp"
+  "nav_msgs"
   "nav2_common"
+  "nav2_msgs"
   "nav2_amcl"
   "nav2_costmap_2d"
   "task_action_interfaces"

@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>ROS2 Package for offloading computation on server side.</description>
   <maintainer email="shulkinj@umich.edu">shulkinj</maintainer>
-  <license>MIT License</license>
+  <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -16,8 +16,10 @@
   <depend>std_srvs</depend>
   <depend>sensor_msgs</depend>
   <depend>irobot_create_msgs</depend>
+  <depend>bondcpp</depend>
 
   <depend>nav2_common</depend>
+  <depend>nav2_msgs</depend>
   <depend>nav2_amcl</depend>
   <depend>nav2_costmap_2d</depend>
 
