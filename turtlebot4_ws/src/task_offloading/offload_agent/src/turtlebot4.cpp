@@ -17,7 +17,7 @@
  */
 
 #include "offload_agent/turtlebot4.hpp"
-#include "task_action_interfaces/action/offloadamcl.hpp"
+#include "task_action_interfaces/action/offloadlocalization.hpp"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -34,7 +34,7 @@
 #include <utility>
 
 using turtlebot4::Turtlebot4;
-using AMCL = task_action_interfaces::action::Offloadamcl;
+using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
 using Dock = irobot_create_msgs::action::Dock;
 using Undock = irobot_create_msgs::action::Undock;
 using WallFollow = irobot_create_msgs::action::WallFollow;
@@ -163,6 +163,11 @@ Turtlebot4::Turtlebot4()
     rclcpp::SensorDataQoS(),
     std::bind(&Turtlebot4::wheel_status_callback, this, std::placeholders::_1));
 
+  lidar_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
+    "scan",
+    rclcpp::SensorDataQoS(),
+    std::bind(&Turtlebot4::lidar_callback, this, std::placeholders::_1));
+
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
@@ -174,8 +179,7 @@ Turtlebot4::Turtlebot4()
 
   // Create action/service clients
   // OUR ADDITIONAL ACTION CLIENTS: OFFLOAD AMCL, OFFLOAD COSTMAPS
-  offload_amcl_client_ = std::make_unique<turtlebot4::Turtlebot4Action<AMCL>>(node_handle_, "offload_amcl");
-  //offload_costmap_client_ = std::make_unique<Turtlebot4Action<Costmap>>(node_handle_, "offload_costmap");
+  offload_localization_client_ = std::make_unique<turtlebot4::Turtlebot4Action<OffloadLocalization>>(node_handle_, "offload_localization");
   dock_client_ = std::make_unique<Turtlebot4Action<Dock>>(node_handle_, "dock");
   undock_client_ = std::make_unique<Turtlebot4Action<Undock>>(node_handle_, "undock");
   wall_follow_client_ = std::make_unique<Turtlebot4Action<WallFollow>>(node_handle_, "wall_follow");
@@ -198,7 +202,7 @@ Turtlebot4::Turtlebot4()
     "oakd/stop_camera");
 
   function_callbacks_ = {
-    {"Offload AMCL", std::bind(&Turtlebot4::offload_amcl_function_callback, this)},
+    {"Offload Localization", std::bind(&Turtlebot4::offload_localization_function_callback, this)},
     //{"Offload Costmap", std::bind(&Turtlebot4::offload_costmap_function_callback, this)},
     {"Dock", std::bind(&Turtlebot4::dock_function_callback, this)},
     {"Undock", std::bind(&Turtlebot4::undock_function_callback, this)},
@@ -255,6 +259,7 @@ void Turtlebot4::run()
   buttons_timer(std::chrono::milliseconds(BUTTONS_TIMER_PERIOD));
   wifi_timer(std::chrono::milliseconds(WIFI_TIMER_PERIOD));
   comms_timer(std::chrono::milliseconds(COMMS_TIMER_PERIOD));
+  offload_timer(std::chrono::milliseconds(OFFLOAD_TIMER_PERIOD));
 }
 
 /**
@@ -350,6 +355,17 @@ void Turtlebot4::comms_timer(const std::chrono::milliseconds timeout)
     });
 }
 
+void Turtlebot4::offload_timer(const std::chrono::milliseconds timeout)
+{
+  offload_timer_ = this->create_wall_timer(
+    timeout,
+    [this]() -> void
+    {
+      RCLCPP_INFO(this->get_logger(), "Sending Action to Offload Server");
+      offload_function_callback();
+    });
+}
+
 /**
  * @brief Creates and runs timer for powering off the robot when low battery
  * @input timeout - Sets timer period in milliseconds
@@ -364,6 +380,7 @@ void Turtlebot4::power_off_timer(const std::chrono::milliseconds timeout)
       power_function_callback();
     });
 }
+
 
 /**
  * @brief Battery subscription callback
@@ -443,6 +460,8 @@ void Turtlebot4::wheel_status_callback(
   }
 }
 
+
+
 /**
  * @brief Sends lightring action goal
  */
@@ -466,6 +485,26 @@ void Turtlebot4::low_battery_animation()
   } else {
     RCLCPP_ERROR(this->get_logger(), "LED animation client NULL");
   }
+}
+
+
+void Turtlebot4::offload_function_callback()
+{
+  if (offload_localization_client_ != nullptr) {
+    RCLCPP_INFO(this->get_logger(), "Offload Localization");
+    auto goal_msg = std::make_shared<OffloadLocalization::Goal>();
+    goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
+    goal_msg.stop_vs_start = offload_status_; // Grab whether we want to offload or not from status private variable
+    goal_msg.initial_pose = initial_pose_; // Grab stored initial pose from turtlebot4
+    goal_msg.laser_scan = scan_ranges_; // Grab stored laser scan data from turtlebot4
+    goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz
+    offload_localization_client->send_goal(goal_msg);
+  } else if (is_docked_) {
+    RCLCPP_ERROR(this->get_logger(), "Undock before following wall");
+  } else {
+    RCLCPP_ERROR(this->get_logger(), "Follow client NULL");
+  }
+
 }
 
 /**

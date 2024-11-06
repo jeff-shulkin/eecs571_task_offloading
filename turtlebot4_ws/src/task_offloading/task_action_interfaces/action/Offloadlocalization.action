@@ -1,7 +1,6 @@
 string robot_id
 bool stop_vs_start # 
 geometry_msgs/PoseWithCovarianceStamped initial_pose
-sensor_msgs/
 sensor_msgs/LaserScan laser_scan
 int32 deadline_ms # deadline in milliseconds. Can be 100 ms/200 ms (10 Hz vs 5 Hz LIDAR)
 ----

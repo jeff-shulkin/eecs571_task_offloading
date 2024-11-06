@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -25,8 +26,8 @@ endif()
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "action/Offloadamcl.action"
-  DEPENDENCIES geometry_msgs action_msgs
+  "action/Offloadlocalization.action"
+  DEPENDENCIES geometry_msgs nav2_msgs action_msgs
 )
 
 
