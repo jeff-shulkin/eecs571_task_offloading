@@ -100,10 +100,10 @@ private:
     const irobot_create_msgs::msg::WheelStatus::SharedPtr wheel_status_msg);
   void joy_callback(
     const sensor_msgs::msg::Joy::SharedPtr joy_msg);
+  void lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg);
 
   // Function callbacks
-  void offload_amcl_function_callback();
-  //void offload_costmap_function_callback();
+  void offload_localization_function_callback();
   void dock_function_callback();
   void undock_function_callback();
   void wall_follow_left_function_callback();

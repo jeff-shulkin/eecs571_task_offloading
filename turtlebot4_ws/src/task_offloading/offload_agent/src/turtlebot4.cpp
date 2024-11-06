@@ -381,6 +381,11 @@ void Turtlebot4::power_off_timer(const std::chrono::milliseconds timeout)
     });
 }
 
+void Turtlebot4::lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg)
+{
+  RCLCPP_INFO(this->get_logger(), "Grabbing latest lidar data");
+  latest_lidar_msg_ = lidar_msg;
+}
 
 /**
  * @brief Battery subscription callback
@@ -496,8 +501,8 @@ void Turtlebot4::offload_function_callback()
     goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
     goal_msg.stop_vs_start = offload_status_; // Grab whether we want to offload or not from status private variable
     goal_msg.initial_pose = initial_pose_; // Grab stored initial pose from turtlebot4
-    goal_msg.laser_scan = scan_ranges_; // Grab stored laser scan data from turtlebot4
-    goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz
+    goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
+    goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
     offload_localization_client->send_goal(goal_msg);
   } else if (is_docked_) {
     RCLCPP_ERROR(this->get_logger(), "Undock before following wall");
