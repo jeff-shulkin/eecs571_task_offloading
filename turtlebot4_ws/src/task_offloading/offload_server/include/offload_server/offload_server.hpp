@@ -28,6 +28,10 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
+#include <bondcpp/bond.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav2_msgs/msg/particle_cloud.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -78,6 +82,7 @@ private:
   void run();
 
   // Subscription callbacks
+  //void bond_callback(const 
   void battery_callback(const sensor_msgs::msg::BatteryState::SharedPtr battery_state_msg);
   void laser_scan_callback(const sensor_msgs::msg::LaserScan::ConstSharedPtr laser_scan_msg);
 
@@ -109,6 +114,19 @@ private:
 
   void offload_amcl_execute(const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle);
 
+  // Callback functions for the offload Costmap action server
+  // TODO: IMPLEMENT THESE FUNCTIONS
+  //rclcpp_action::GoalResponse handle_offload_costmap_goal(
+  //   const rclcpp_action::GoalUUID & uuid,
+  //   std::shared_ptr<const Costmap::Goal> goal);
+
+  //rclcpp_action::CancelResponse handle_offload_costmap_cancel(
+  //   const std::shared_ptr<GoalHandleOffloadCostmap> goal_handle);
+
+  //void handle_offload_costmap_accepted(const std::shared_ptr<GoalHandleOffloadCostmap> goal_handle);
+
+  //void offload_costmap_execute(const std::shared_ptr<GoalHandleOffloadCostmap> goal_handle);
+
   // IP
   std::string get_ip();
   std::string wifi_interface_;
@@ -129,14 +147,22 @@ private:
   rclcpp::TimerBase::SharedPtr wifi_timer_;
   rclcpp::TimerBase::SharedPtr power_off_timer_;
 
-  // Subscribers
+  // General Subscribers
+  // TODO: ADD BOND, CLOCK TOPIC SUBSCRIBERS
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
+  //rclcpp::Subscription<bond_
+  // AMCL Subscribers
+  // TODO: ADD INITIAL_POSE, MAP SUBSCRIBERS
+  //rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr inital_pose_sub_;
+  //rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr  map_sub_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::ConstSharedPtr laser_scan_sub_;
 
-  // Publishers
+  // General Publishers
+  // TODO: ADD BOND PUBLISHER
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
 
+  // AMCL Publishers
   // Store power saver mode
   bool power_saver_;
 

@@ -74,7 +74,7 @@ class Turtlebot4 : public rclcpp::Node
 {
 public:
   // Type alias for actions and services
-  using AMCL = task_action_interfaces::action::Offloadamcl;
+  using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
   //using Costmap = irobot_create_msgs::action::OffloadCostmap;
   using Dock = irobot_create_msgs::action::Dock;
   using Undock = irobot_create_msgs::action::Undock;
@@ -168,8 +168,7 @@ private:
   std::unique_ptr<Leds> leds_;
 
   // Actions
-  std::unique_ptr<Turtlebot4Action<AMCL>> offload_amcl_client_;
-  //std::unique_ptr<Turtlebot4Action<Costmap>> offload_costmap_client_;
+  std::unique_ptr<Turtlebot4Action<OffloadLocalization>> offload_localization_client_;
   std::unique_ptr<Turtlebot4Action<Dock>> dock_client_;
   std::unique_ptr<Turtlebot4Action<Undock>> undock_client_;
   std::unique_ptr<Turtlebot4Action<WallFollow>> wall_follow_client_;
@@ -208,6 +207,9 @@ private:
 
   // Store power saver mode
   bool power_saver_;
+
+  // Store initial pose
+  Pose intial_pose_;
 
   // Turtlebot4 Model
   Turtlebot4Model model_;

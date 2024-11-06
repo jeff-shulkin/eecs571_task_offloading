@@ -78,6 +78,22 @@ Turtlebot4::Turtlebot4()
   this->declare_parameter("power_saver", true);
   power_saver_ = this->get_parameter("power_saver").as_bool();
 
+  // Grab the initial pose
+  this->declare_parameter("initial_pose.y", 0.0);
+  this->declare_parameter("initial_pose.z", 0.0);
+  this->declare_parameter("initial_pose.qx", 0.0);
+  this->declare_parameter("initial_pose.qy", 0.0);
+  this->declare_parameter("initial_pose.qz", 0.0);
+  this->declare_parameter("initial_pose.qw", 1.0);
+
+  initial_pose_.position.x = this->get_parameter("initial_pose.x").as_double();
+  initial_pose_.position.y = this->get_parameter("initial_pose.y").as_double();
+  initial_pose_.position.z = this->get_parameter("initial_pose.z").as_double();
+  initial_pose_.quaternion.x = this->get_parameter("initial_pose.qx").as_double();
+  initial_pose_.quaternion.y = this->get_parameter("initial_pose.qy").as_double();
+  initial_pose_.quaternion.z = this->get_parameter("initial_pose.qz").as_double();
+  initial_pose_.quaternion.w = this->get_parameter("initial_pose.qz").as_double();
+
   button_parameters_ = {
     {CREATE3_1, "buttons.create3_1"},
     {CREATE3_POWER, "buttons.create3_power"},

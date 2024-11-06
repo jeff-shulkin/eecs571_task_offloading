@@ -36,9 +36,10 @@ ARGUMENTS = [
     DeclareLaunchArgument('algo', default_value='fifo',
                           choices=['fifo', 'round_robin', 'rms', 'edf', 'lstf'],
                           description='Offload Server Scheduling Algorithm'),
+
 ]
 
-for pose_element in ['x', 'y', 'z', 'yaw']:
+for pose_element in ['x', 'y', 'z', 'qx', 'qy', 'qz']:
     ARGUMENTS.append(DeclareLaunchArgument(pose_element, default_value='0.0',
                      description=f'{pose_element} component of the robot pose.'))
 
@@ -69,7 +70,9 @@ def generate_launch_description():
             ('x', LaunchConfiguration('x')),
             ('y', LaunchConfiguration('y')),
             ('z', LaunchConfiguration('z')),
-            ('yaw', LaunchConfiguration('yaw'))]
+            ('qx', LaunchConfiguration('qx')),
+            ('qy', LaunchConfiguration('qy')),
+            ('qz', LaunchConfiguration('qz'))]
     )
 
     # Create launch description and add actions
