@@ -125,6 +125,8 @@ private:
   void add_button_function_callbacks();
   void add_menu_function_callbacks();
 
+  void offload_function_callback();
+
   void low_battery_animation();
 
   // Run display timer
@@ -144,6 +146,9 @@ private:
 
   // Run power off timer
   void power_off_timer(const std::chrono::milliseconds timeout);
+
+  // Run offload timer
+  void offload_timer(const std::chrono::milliseconds timeout);
 
   // IP
   std::string get_ip();

@@ -42,7 +42,6 @@ void OffloadServer::offload_amcl_execute(const std::shared_ptr<OffloadServer::Go
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<OffloadServer::AMCL::Feedback>();
     auto result = std::make_shared<OffloadServer::AMCL::Result>();
-    printf("Offloading AMCL Hello World!\n");
 
     for (int i = 1; rclcpp::ok(); ++i) {
     // Check if there is a cancel request
@@ -52,11 +51,11 @@ void OffloadServer::offload_amcl_execute(const std::shared_ptr<OffloadServer::Go
         RCLCPP_INFO(this->get_logger(), "Goal canceled");
         return;
     }
-
-    // Update sequence
-    //feedback->feedback = i;
+    
+    auto initial_pose = goal->geometry_msgs::msg::PoseWithCovarianceStamped initial_pose;
+    auto resulting_pose = (initial_pose);
     // Publish feedback
-    //goal_handle->publish_feedback(feedback);
+    goal_handle->publish_feedback(feedback);
     RCLCPP_INFO(this->get_logger(), "TODO: Publish feedback");
 
     loop_rate.sleep();
