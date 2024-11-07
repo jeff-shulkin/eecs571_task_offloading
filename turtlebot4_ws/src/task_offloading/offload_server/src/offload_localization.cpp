@@ -10,11 +10,12 @@ using namespace offload_server;
 
 rclcpp_action::GoalResponse OffloadServer::handle_offload_localization_goal(
     const rclcpp_action::GoalUUID & uuid,
-    std::shared_ptr<const OffloadServer::Localization::Goal> goal)
+    std::shared_ptr<const OffloadServer::OffloadLocalization::Goal> goal)
 {
     RCLCPP_INFO(this->get_logger(), "Received goal request for robot %s", goal->robot_id.c_str());
     (void)uuid;
-    if (goal->stop_vs_start == false) {
+    if (goal->status == false) {
+    // TODO: CANCEL JOBS ON SCHEDULER FROM THIS ROBOT ID
     return rclcpp_action::GoalResponse::REJECT;
     }
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -40,8 +41,8 @@ void OffloadServer::offload_localization_execute(const std::shared_ptr<OffloadSe
     RCLCPP_INFO(this->get_logger(), "Executing goal");
     rclcpp::Rate loop_rate(1);
     const auto goal = goal_handle->get_goal();
-    auto feedback = std::make_shared<OffloadServer::Localization::Feedback>();
-    auto result = std::make_shared<OffloadServer::Localization::Result>();
+    auto feedback = std::make_shared<OffloadServer::OffloadLocalization::Feedback>();
+    auto result = std::make_shared<OffloadServer::OffloadLocalization::Result>();
 
     for (int i = 1; rclcpp::ok(); ++i) {
     // Check if there is a cancel request
@@ -52,7 +53,7 @@ void OffloadServer::offload_localization_execute(const std::shared_ptr<OffloadSe
         return;
     }
     
-    auto initial_pose = goal->geometry_msgs::msg::PoseWithCovarianceStamped initial_pose;
+    auto initial_pose = goal->initial_pose;
     auto resulting_pose = (initial_pose);
     // Publish feedback
     goal_handle->publish_feedback(feedback);

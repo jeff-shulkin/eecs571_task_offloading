@@ -48,13 +48,12 @@
 #include "irobot_create_msgs/srv/e_stop.hpp"
 #include "irobot_create_msgs/srv/robot_power.hpp"
 
-#include "task_action_interfaces/action/offloadamcl.hpp"
+#include "task_action_interfaces/action/offloadlocalization.hpp"
 #include "offload_server/scheduler.hpp"
 #include "offload_server/utils.hpp"
 
 /** Supported functions
- * Offload AMCL
- * Offload Costmaps
+ * Offload Localization
  * Power off
  */
 
@@ -71,8 +70,8 @@ class OffloadServer : public rclcpp::Node
 
 public:
 
-  using AMCL = task_action_interfaces::action::Offloadamcl;
-  using GoalHandleOffloadAMCL = rclcpp_action::ServerGoalHandle<AMCL>;
+  using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
+  using GoalHandleOffloadLocalization = rclcpp_action::ServerGoalHandle<OffloadLocalization>;
 
   // Constructor and Destructor
   explicit OffloadServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
@@ -82,19 +81,18 @@ private:
   void run();
 
   // Subscription callbacks
-  //void bond_callback(const 
   void battery_callback(const sensor_msgs::msg::BatteryState::SharedPtr battery_state_msg);
   void laser_scan_callback(const sensor_msgs::msg::LaserScan::ConstSharedPtr laser_scan_msg);
 
   // Function callbacks
-  void offload_amcl_function_callback();
+  void offload_localization_function_callback();
   void help_function_callback();
 
-  // Run AMCL deadline timer
-  void amcl_deadline_timer(const std::chrono::milliseconds deadline);
+  // Run localization deadline timer
+  void localization_timer(const std::chrono::milliseconds deadline);
 
   // Run costmap computation deadline timer
-  void costmap_deadline_timer(const std::chrono::milliseconds deadline);
+  void costmap_timer(const std::chrono::milliseconds deadline);
 
   // Run wifi deadline timer
   void wifi_timer(const std::chrono::milliseconds deadline);
@@ -102,30 +100,17 @@ private:
   // Run power off timer
   void power_off_timer(const std::chrono::milliseconds timeout);
 
-  // Callback functions for offload AMCL action server
-  rclcpp_action::GoalResponse handle_offload_amcl_goal(
+  // Callback functions for offload localization action server
+  rclcpp_action::GoalResponse handle_offload_localization_goal(
       const rclcpp_action::GoalUUID & uuid,
-      std::shared_ptr<const AMCL::Goal> goal);
+      std::shared_ptr<const OffloadLocalization::Goal> goal);
 
-  rclcpp_action::CancelResponse handle_offload_amcl_cancel(
-      const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle);
+  rclcpp_action::CancelResponse handle_offload_localization_cancel(
+      const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
 
-  void handle_offload_amcl_accepted(const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle);
+  void handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
 
-  void offload_amcl_execute(const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle);
-
-  // Callback functions for the offload Costmap action server
-  // TODO: IMPLEMENT THESE FUNCTIONS
-  //rclcpp_action::GoalResponse handle_offload_costmap_goal(
-  //   const rclcpp_action::GoalUUID & uuid,
-  //   std::shared_ptr<const Costmap::Goal> goal);
-
-  //rclcpp_action::CancelResponse handle_offload_costmap_cancel(
-  //   const std::shared_ptr<GoalHandleOffloadCostmap> goal_handle);
-
-  //void handle_offload_costmap_accepted(const std::shared_ptr<GoalHandleOffloadCostmap> goal_handle);
-
-  //void offload_costmap_execute(const std::shared_ptr<GoalHandleOffloadCostmap> goal_handle);
+  void offload_localization_execute(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
 
   // IP
   std::string get_ip();
@@ -138,11 +123,10 @@ private:
   std::map<std::string, offload_server_function_callback_t> function_callbacks_;
 
   // Action Servers
-  rclcpp_action::Server<AMCL>::SharedPtr offload_amcl_action_server_;
-  //rclcpp_action::Server<Action>::SharedPtr offload_costmap_action_server_;
+  rclcpp_action::Server<OffloadLocalization>::SharedPtr offload_localization_action_server_;
 
   // Timers
-  rclcpp::TimerBase::SharedPtr amcl_timer_;
+  rclcpp::TimerBase::SharedPtr localization_timer_;
   rclcpp::TimerBase::SharedPtr costmap_timer_;
   rclcpp::TimerBase::SharedPtr wifi_timer_;
   rclcpp::TimerBase::SharedPtr power_off_timer_;

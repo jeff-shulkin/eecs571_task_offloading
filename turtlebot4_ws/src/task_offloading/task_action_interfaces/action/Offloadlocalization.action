@@ -6,6 +6,7 @@ sensor_msgs/LaserScan laser_scan
 int32 deadline_ms # deadline in milliseconds. Can be 100 ms/200 ms (10 Hz vs 5 Hz LIDAR)
 ---
 # Result Definition
+bool success
 geometry_msgs/PoseWithCovarianceStamped final_pose # Final pose for the robot to navigate to
 ---
 # Feedback Definition

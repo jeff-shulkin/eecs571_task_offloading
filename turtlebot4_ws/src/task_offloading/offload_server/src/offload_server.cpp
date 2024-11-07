@@ -76,34 +76,18 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   this->declare_parameter("wifi.interface", "wlan0");
   wifi_interface_ = this->get_parameter("wifi.interface").as_string();
 
-  RCLCPP_INFO(node_handle_->get_logger(), "AFTER WIFI: FUCK YOU");
-
-  //this->declare_parameter("power_saver", true);
-  //power_saver_ = this->get_parameter("power_saver").as_bool();
-
-  //RCLCPP_INFO(node_handle_->get_logger(), "AFTER POWER: FUCK YOU");
   // ROS Action Servers
-  offload_amcl_action_server_ = rclcpp_action::create_server<AMCL>(
+  offload_localization_action_server_ = rclcpp_action::create_server<OffloadLocalization>(
   this->get_node_base_interface(),
   this->get_node_clock_interface(),
   this->get_node_logging_interface(),
   this->get_node_waitables_interface(),
-  "offload_amcl",
-  std::bind(&offload_server::OffloadServer::handle_offload_amcl_goal, this, std::placeholders::_1, std::placeholders::_2),
-  std::bind(&offload_server::OffloadServer::handle_offload_amcl_cancel, this, std::placeholders::_1),
-  std::bind(&offload_server::OffloadServer::handle_offload_amcl_accepted, this, std::placeholders::_1));
+  "offload_localization",
+  std::bind(&offload_server::OffloadServer::handle_offload_localization_goal, this, std::placeholders::_1, std::placeholders::_2),
+  std::bind(&offload_server::OffloadServer::handle_offload_localization_cancel, this, std::placeholders::_1),
+  std::bind(&offload_server::OffloadServer::handle_offload_localization_accepted, this, std::placeholders::_1));
 
-  RCLCPP_INFO(node_handle_->get_logger(), "Offload_amcl action server instantiated");
-  // TODO: ADD BACK IN COSTMAP ACTION SERVER WHEN READY
-  //this->offload_costmap_action_server_ = rclcpp::create_serer<AMCL>(
-  //this->get_node_base_interface(),
-  //this->get_node_clock_interface(),
-  //this->get_node_logging_interface(),
-  //this->get_node_waitables_interface(),
-  //"offload_costmap",
-  //std::bind(&OffloadCostmapActionServer::handle_goal, this, std::placeholders::_1, std::place>
-  //std::bind(&OffloadCostmapActionServer::handle_cancel, this, std::placeholders::_1),
-  //std::bind(&OffloadCostmapActionServer::handle_accepted, this, std::placeholders::_1));
+  RCLCPP_INFO(node_handle_->get_logger(), "offload_localization action server instantiated");
 
   // Subscriptions
   battery_sub_ = this->create_subscription<sensor_msgs::msg::BatteryState>(
@@ -120,10 +104,6 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
     rclcpp::QoS(rclcpp::KeepLast(10)));
-
-  //function_call_pub_ = this->create_publisher<std_msgs::msg::String>(
-  //  "function_calls",
-  //  rclcpp::QoS(rclcpp::KeepLast(10)));
 
   run();
 }
@@ -164,16 +144,6 @@ void OffloadServer::wifi_timer(const std::chrono::milliseconds timeout)
 
     });
 }
-/**
- * @brief Callback for when a function call is executed
- */
-//void OffloadServer::function_call_callback(std::string function_name)
-//{
-//  std_msgs::msg::String msg;
-//  msg.data = function_name;
-
-//  function_call_pub_->publish(msg);
-//}
 
 /**
  * @brief Get IP of network interface specified in ROS parameters

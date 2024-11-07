@@ -56,7 +56,7 @@ def generate_launch_description():
     )
 
     offload_agent_node_yaml_file = LaunchConfiguration('agent_param_file')
-    #offload_server_node_yaml_file = LaunchConfiguration('server_param_file')
+    offload_server_node_yaml_file = LaunchConfiguration('server_param_file')
 
     # Turtlebot4 node
     offload_agent_node = Node(
@@ -90,7 +90,7 @@ def generate_launch_description():
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(server_param_file_cmd)
     ld.add_action(agent_param_file_cmd)
-    #ld.add_action(offload_server_node)
+    ld.add_action(offload_server_node)
     ld.add_action(offload_agent_node)
     ld.add_action(offload_agent_gz_hmi_node)
     return ld
