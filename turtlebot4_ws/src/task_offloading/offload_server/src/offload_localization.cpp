@@ -1,10 +1,10 @@
-#ifndef OFFLOAD_AMCL_ACTION_SERVER_HPP_
-#define OFFLOAD_AMCL_ACTION_SERVER_HPP_
+#ifndef OFFLOAD_LOCALIZATION_ACTION_SERVER_HPP_
+#define OFFLOAD_LOCALIZATION_ACTION_SERVER_HPP_
 
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "offload_server/offload_server.hpp"
-#include "task_action_interfaces/action/offloadamcl.hpp"
+#include "task_action_interfaces/action/offloadlocalization.hpp"
 
 using namespace offload_server;
 
