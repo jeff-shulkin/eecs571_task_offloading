@@ -48,7 +48,7 @@
 #include "irobot_create_msgs/srv/e_stop.hpp"
 #include "irobot_create_msgs/srv/robot_power.hpp"
 
-#include "task_action_interfaces/action/offloadamcl.hpp"
+#include "task_action_interfaces/action/offloadlocalization.hpp"
 
 
 /** Supported functions
@@ -63,6 +63,7 @@ namespace turtlebot4
 {
 
 // Timer Periods
+static constexpr auto OFFLOAD_TIMER_PERIOD = 100;
 static constexpr auto BUTTONS_TIMER_PERIOD = 10;
 static constexpr auto COMMS_TIMER_PERIOD = 30000;
 static constexpr auto DISPLAY_TIMER_PERIOD = 50;
@@ -125,9 +126,10 @@ private:
   void add_button_function_callbacks();
   void add_menu_function_callbacks();
 
-  void offload_function_callback();
-
   void low_battery_animation();
+
+  // Run Offload Localization timer
+  void offload_timer(const std::chrono::milliseconds timeout);
 
   // Run display timer
   void display_timer(const std::chrono::milliseconds timeout);
@@ -146,9 +148,6 @@ private:
 
   // Run power off timer
   void power_off_timer(const std::chrono::milliseconds timeout);
-
-  // Run offload timer
-  void offload_timer(const std::chrono::milliseconds timeout);
 
   // IP
   std::string get_ip();
@@ -188,6 +187,7 @@ private:
   std::unique_ptr<Turtlebot4Service<TriggerSrv>> oakd_stop_client_;
 
   // Timers
+  rclcpp::TimerBase::SharedPtr offload_timer_;
   rclcpp::TimerBase::SharedPtr display_timer_;
   rclcpp::TimerBase::SharedPtr buttons_timer_;
   rclcpp::TimerBase::SharedPtr leds_timer_;
@@ -196,6 +196,7 @@ private:
   rclcpp::TimerBase::SharedPtr power_off_timer_;
 
   // Subscribers
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
   rclcpp::Subscription<irobot_create_msgs::msg::DockStatus>::SharedPtr dock_status_sub_;
   rclcpp::Subscription<irobot_create_msgs::msg::WheelStatus>::SharedPtr wheel_status_sub_;
@@ -213,8 +214,17 @@ private:
   // Store power saver mode
   bool power_saver_;
 
+  // Store robot id
+  std::string robot_id_;
+
   // Store initial pose
-  Pose intial_pose_;
+  geometry_msgs::msg::Pose initial_pose_;
+
+  // Store last lidar message
+  sensor_msgs::msg::LaserScan latest_lidar_msg_;
+
+  // Store whether or not we want to offload localization
+  bool offload_status_;
 
   // Turtlebot4 Model
   Turtlebot4Model model_;

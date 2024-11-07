@@ -78,7 +78,13 @@ Turtlebot4::Turtlebot4()
   this->declare_parameter("power_saver", true);
   power_saver_ = this->get_parameter("power_saver").as_bool();
 
+  this->declare_parameter("robot_id", "turtlebot4_default");
+  robot_id_ = this->get_parameter("robot_id").as_string();
+
+  RCLCPP_INFO(this->get_logger(), "robot_id: %s", robot_id_.c_str());
+
   // Grab the initial pose
+  this->declare_parameter("initial_pose.x", 0.0);
   this->declare_parameter("initial_pose.y", 0.0);
   this->declare_parameter("initial_pose.z", 0.0);
   this->declare_parameter("initial_pose.qx", 0.0);
@@ -89,10 +95,10 @@ Turtlebot4::Turtlebot4()
   initial_pose_.position.x = this->get_parameter("initial_pose.x").as_double();
   initial_pose_.position.y = this->get_parameter("initial_pose.y").as_double();
   initial_pose_.position.z = this->get_parameter("initial_pose.z").as_double();
-  initial_pose_.quaternion.x = this->get_parameter("initial_pose.qx").as_double();
-  initial_pose_.quaternion.y = this->get_parameter("initial_pose.qy").as_double();
-  initial_pose_.quaternion.z = this->get_parameter("initial_pose.qz").as_double();
-  initial_pose_.quaternion.w = this->get_parameter("initial_pose.qz").as_double();
+  initial_pose_.orientation.x = this->get_parameter("initial_pose.qx").as_double();
+  initial_pose_.orientation.y = this->get_parameter("initial_pose.qy").as_double();
+  initial_pose_.orientation.z = this->get_parameter("initial_pose.qz").as_double();
+  initial_pose_.orientation.w = this->get_parameter("initial_pose.qw").as_double();
 
   button_parameters_ = {
     {CREATE3_1, "buttons.create3_1"},
@@ -203,7 +209,6 @@ Turtlebot4::Turtlebot4()
 
   function_callbacks_ = {
     {"Offload Localization", std::bind(&Turtlebot4::offload_localization_function_callback, this)},
-    //{"Offload Costmap", std::bind(&Turtlebot4::offload_costmap_function_callback, this)},
     {"Dock", std::bind(&Turtlebot4::dock_function_callback, this)},
     {"Undock", std::bind(&Turtlebot4::undock_function_callback, this)},
     {"Wall Follow Left", std::bind(&Turtlebot4::wall_follow_left_function_callback, this)},
@@ -362,7 +367,7 @@ void Turtlebot4::offload_timer(const std::chrono::milliseconds timeout)
     [this]() -> void
     {
       RCLCPP_INFO(this->get_logger(), "Sending Action to Offload Server");
-      offload_function_callback();
+      offload_localization_function_callback();
     });
 }
 
@@ -384,7 +389,7 @@ void Turtlebot4::power_off_timer(const std::chrono::milliseconds timeout)
 void Turtlebot4::lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg)
 {
   RCLCPP_INFO(this->get_logger(), "Grabbing latest lidar data");
-  latest_lidar_msg_ = lidar_msg;
+  latest_lidar_msg_ = *lidar_msg;
 }
 
 /**
@@ -493,21 +498,33 @@ void Turtlebot4::low_battery_animation()
 }
 
 
-void Turtlebot4::offload_function_callback()
+void Turtlebot4::offload_localization_function_callback()
 {
   if (offload_localization_client_ != nullptr) {
     RCLCPP_INFO(this->get_logger(), "Offload Localization");
+    // Initialize Goal message
     auto goal_msg = std::make_shared<OffloadLocalization::Goal>();
-    goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
-    goal_msg.stop_vs_start = offload_status_; // Grab whether we want to offload or not from status private variable
-    goal_msg.initial_pose = initial_pose_; // Grab stored initial pose from turtlebot4
-    goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
-    goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
-    offload_localization_client->send_goal(goal_msg);
-  } else if (is_docked_) {
-    RCLCPP_ERROR(this->get_logger(), "Undock before following wall");
+
+    goal_msg->robot_id = robot_id_; // Grab robot id from launch parameters
+    goal_msg->status = offload_status_; // Grab whether we want to offload or not from status private variable
+
+    goal_msg->initial_pose.pose.pose = initial_pose_; // Grab stored initial pose from turtlebot4
+    goal_msg->initial_pose.pose.covariance = {
+                                        1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 0.0, 1.0
+                                       };
+
+    goal_msg->laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
+
+    goal_msg->deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
+
+    offload_localization_client_->send_goal(goal_msg);
   } else {
-    RCLCPP_ERROR(this->get_logger(), "Follow client NULL");
+    RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
   }
 
 }
@@ -812,30 +829,3 @@ std::string Turtlebot4::get_ip()
   }
   return std::string(UNKNOWN_IP);
 }
-
-
-/**
- * @brief Sends offload_amcl action goal
- */
-void Turtlebot4::offload_amcl_function_callback()
-{
-  if (offload_amcl_client_ != nullptr) {
-    RCLCPP_INFO(this->get_logger(), "Offloading AMCL Calculations");
-    offload_amcl_client_->send_goal();
-  } else {
-    RCLCPP_ERROR(this->get_logger(), "Offload AMCL client NULL");
-  }
-}
-
-/**
- * @brief Sends offload_costmaps action goal
-// */
-//void OffloadAgent::offload_costmaps_function_callback()
-//{
-//  if (offload_costmap_client_ != nullptr) {
-//    RCLCPP_INFO(this->get_logger(), "Offloading local costmap computations");
-//    offload_costmap_client_->send_goal();
-//  } else {
-//    RCLCPP_ERROR(this->get_logger(), "Undock client NULL");
-//  }
-//}

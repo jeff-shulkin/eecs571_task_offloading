@@ -30,6 +30,8 @@ ARGUMENTS = [
     DeclareLaunchArgument('algo', default_value='fifo',
                           choices=['fifo', 'round_robin', 'rms', 'edf', 'lstf'],
                           description='Offload Server Scheduling Algorithm'),
+
+    DeclareLaunchArgument('robot_id', default_value='turtlebot4_default', description='Turtlebot4 Default ID')
 ]
 
 
@@ -54,7 +56,7 @@ def generate_launch_description():
     )
 
     offload_agent_node_yaml_file = LaunchConfiguration('agent_param_file')
-    offload_server_node_yaml_file = LaunchConfiguration('server_param_file')
+    #offload_server_node_yaml_file = LaunchConfiguration('server_param_file')
 
     # Turtlebot4 node
     offload_agent_node = Node(
@@ -62,7 +64,8 @@ def generate_launch_description():
         name='offload_agent',
         executable='offload_agent',
         parameters=[offload_agent_node_yaml_file,
-                    {'model': LaunchConfiguration('model')}],
+                    {'model': LaunchConfiguration('model')},
+                    {'robot_id': LaunchConfiguration('robot_id')}],
         output='screen',
     )
 
@@ -87,7 +90,7 @@ def generate_launch_description():
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(server_param_file_cmd)
     ld.add_action(agent_param_file_cmd)
-    ld.add_action(offload_server_node)
+    #ld.add_action(offload_server_node)
     ld.add_action(offload_agent_node)
     ld.add_action(offload_agent_gz_hmi_node)
     return ld
