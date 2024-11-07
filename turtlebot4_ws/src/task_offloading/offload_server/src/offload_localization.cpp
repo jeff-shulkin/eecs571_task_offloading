@@ -8,9 +8,9 @@
 
 using namespace offload_server;
 
-rclcpp_action::GoalResponse OffloadServer::handle_offload_amcl_goal(
+rclcpp_action::GoalResponse OffloadServer::handle_offload_localization_goal(
     const rclcpp_action::GoalUUID & uuid,
-    std::shared_ptr<const OffloadServer::AMCL::Goal> goal)
+    std::shared_ptr<const OffloadServer::Localization::Goal> goal)
 {
     RCLCPP_INFO(this->get_logger(), "Received goal request for robot %s", goal->robot_id.c_str());
     (void)uuid;
@@ -20,28 +20,28 @@ rclcpp_action::GoalResponse OffloadServer::handle_offload_amcl_goal(
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 
-rclcpp_action::CancelResponse OffloadServer::handle_offload_amcl_cancel(
-    const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle)
+rclcpp_action::CancelResponse OffloadServer::handle_offload_localization_cancel(
+    const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle)
 {
     RCLCPP_INFO(this->get_logger(), "Received request to cancel goal");
     (void)goal_handle;
     return rclcpp_action::CancelResponse::ACCEPT;
 }
 
-void OffloadServer::handle_offload_amcl_accepted(const std::shared_ptr<GoalHandleOffloadAMCL> goal_handle)
+void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle)
 {
     using namespace std::placeholders;
     // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-    std::thread{std::bind(&OffloadServer::offload_amcl_execute, this, _1), goal_handle}.detach();
+    std::thread{std::bind(&OffloadServer::offload_localization_execute, this, _1), goal_handle}.detach();
 }
 
-void OffloadServer::offload_amcl_execute(const std::shared_ptr<OffloadServer::GoalHandleOffloadAMCL> goal_handle)
+void OffloadServer::offload_localization_execute(const std::shared_ptr<OffloadServer::GoalHandleOffloadLocalization> goal_handle)
 {
     RCLCPP_INFO(this->get_logger(), "Executing goal");
     rclcpp::Rate loop_rate(1);
     const auto goal = goal_handle->get_goal();
-    auto feedback = std::make_shared<OffloadServer::AMCL::Feedback>();
-    auto result = std::make_shared<OffloadServer::AMCL::Result>();
+    auto feedback = std::make_shared<OffloadServer::Localization::Feedback>();
+    auto result = std::make_shared<OffloadServer::Localization::Result>();
 
     for (int i = 1; rclcpp::ok(); ++i) {
     // Check if there is a cancel request
