@@ -24,10 +24,15 @@ enum class TaskType {
 
 struct ROS2Job {
         std::string agent_id;
-        TaskType task_id;
 	std::function<void (void)> callback;
         std::chrono::milliseconds deadline;
 };
+
+// struct ROS2JobCompare {
+//     bool operator()(ROS2Job& a, ROS2Job& b){
+//             return a->callback. > b;
+//     }
+// };
 
 class JobScheduler {
 
@@ -42,7 +47,8 @@ class JobScheduler {
                 rclcpp::TimerBase::SharedPtr costmap_timer_;
                 rclcpp::TimerBase::SharedPtr wifi_timer_;
                 // All scheduler data structures
-		std::deque<ROS2Job> fifo_sched_;
+		// std::priority_queue<ROS2Job, std::deque<ROS2Job>, ROS2JobCompare> fifo_sched_;
+		std::queue<ROS2Job> fifo_sched_;
 
 }; // JobScheduler
 
