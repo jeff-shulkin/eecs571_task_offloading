@@ -63,6 +63,7 @@ namespace turtlebot4
 {
 
 // Timer Periods
+static constexpr auto LATENCY_TIMER_PERIOD = 200;
 static constexpr auto OFFLOAD_TIMER_PERIOD = 100;
 static constexpr auto BUTTONS_TIMER_PERIOD = 10;
 static constexpr auto COMMS_TIMER_PERIOD = 30000;
@@ -149,8 +150,12 @@ private:
   // Run power off timer
   void power_off_timer(const std::chrono::milliseconds timeout);
 
+  // Run latency timer
+  void latency_timer(const std::chrono::milliseconds timeout);
+
   // IP
   std::string get_ip();
+  std::string get_server_ip();
   std::string wifi_interface_;
 
   // Node
@@ -188,6 +193,7 @@ private:
 
   // Timers
   rclcpp::TimerBase::SharedPtr offload_timer_;
+  rclcpp::TimerBase::SharedPtr latency_timer_;
   rclcpp::TimerBase::SharedPtr display_timer_;
   rclcpp::TimerBase::SharedPtr buttons_timer_;
   rclcpp::TimerBase::SharedPtr leds_timer_;
@@ -225,6 +231,12 @@ private:
 
   // Store whether or not we want to offload localization
   bool offload_status_;
+
+  // Store server IP
+  std::string server_ip_;
+
+  // Store current round-trip latency
+  double latency_ = 0.0;
 
   // Turtlebot4 Model
   Turtlebot4Model model_;

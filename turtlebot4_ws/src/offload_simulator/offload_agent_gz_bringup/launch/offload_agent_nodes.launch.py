@@ -31,7 +31,9 @@ ARGUMENTS = [
                           choices=['fifo', 'round_robin', 'rms', 'edf', 'lstf'],
                           description='Offload Server Scheduling Algorithm'),
 
-    DeclareLaunchArgument('robot_id', default_value='turtlebot4_default', description='Turtlebot4 Default ID')
+    DeclareLaunchArgument('robot_id', default_value='turtlebot4_default', description='Turtlebot4 Default ID'),
+
+    DeclareLaunchArgument('server_ip', default_value='127.0.0.1', description='Server IP Address')
 ]
 
 
@@ -65,7 +67,8 @@ def generate_launch_description():
         executable='offload_agent',
         parameters=[offload_agent_node_yaml_file,
                     {'model': LaunchConfiguration('model')},
-                    {'robot_id': LaunchConfiguration('robot_id')}],
+                    {'robot_id': LaunchConfiguration('robot_id')},
+                    {'server_ip': LaunchConfiguration('server_ip')}],
         output='screen',
     )
 

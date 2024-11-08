@@ -36,7 +36,8 @@ ARGUMENTS = [
     DeclareLaunchArgument('algo', default_value='fifo',
                           choices=['fifo', 'round_robin', 'rms', 'edf', 'lstf'],
                           description='Offload Server Scheduling Algorithm'),
-    DeclareLaunchArgument('robot_id', default_value='turtlebot4_default', description='Turtlebot4 id')
+    DeclareLaunchArgument('robot_id', default_value='turtlebot4_default', description='Turtlebot4 id'),
+    DeclareLaunchArgument('server_ip', default_value='127.0.0.1', description='Server IP Address'),
 ]
 
 for pose_element in ['x', 'y', 'z', 'qx', 'qy', 'qz']:

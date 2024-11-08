@@ -27,11 +27,13 @@
 #include <arpa/inet.h>
 
 #include <chrono>
+#include <regex>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
 #include <utility>
+#include <fstream>
 
 using turtlebot4::Turtlebot4;
 using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
@@ -81,6 +83,9 @@ Turtlebot4::Turtlebot4()
   this->declare_parameter("robot_id", "turtlebot4_default");
   robot_id_ = this->get_parameter("robot_id").as_string();
 
+  this->declare_parameter("server_ip", "127.0.0.1");
+  server_ip_ = this->get_parameter("server_ip").as_string();
+
   RCLCPP_INFO(this->get_logger(), "robot_id: %s", robot_id_.c_str());
 
   // Grab the initial pose
@@ -90,7 +95,7 @@ Turtlebot4::Turtlebot4()
   this->declare_parameter("initial_pose.qx", 0.0);
   this->declare_parameter("initial_pose.qy", 0.0);
   this->declare_parameter("initial_pose.qz", 0.0);
-  this->declare_parameter("initial_pose.qw", 1.0);
+  this->declare_parameter("initial_pose.qw", 0.0);
 
   initial_pose_.position.x = this->get_parameter("initial_pose.x").as_double();
   initial_pose_.position.y = this->get_parameter("initial_pose.y").as_double();
@@ -184,7 +189,6 @@ Turtlebot4::Turtlebot4()
     rclcpp::QoS(rclcpp::KeepLast(10)));
 
   // Create action/service clients
-  // OUR ADDITIONAL ACTION CLIENTS: OFFLOAD AMCL, OFFLOAD COSTMAPS
   offload_localization_client_ = std::make_unique<turtlebot4::Turtlebot4Action<OffloadLocalization>>(node_handle_, "offload_localization");
   dock_client_ = std::make_unique<Turtlebot4Action<Dock>>(node_handle_, "dock");
   undock_client_ = std::make_unique<Turtlebot4Action<Undock>>(node_handle_, "undock");
@@ -261,10 +265,55 @@ void Turtlebot4::run()
     leds_timer(std::chrono::milliseconds(LEDS_TIMER_PERIOD));
   }
 
+  latency_timer(std::chrono::milliseconds(LATENCY_TIMER_PERIOD));
   buttons_timer(std::chrono::milliseconds(BUTTONS_TIMER_PERIOD));
   wifi_timer(std::chrono::milliseconds(WIFI_TIMER_PERIOD));
   comms_timer(std::chrono::milliseconds(COMMS_TIMER_PERIOD));
   offload_timer(std::chrono::milliseconds(OFFLOAD_TIMER_PERIOD));
+}
+
+void Turtlebot4::latency_timer(const std::chrono::milliseconds timeout)
+{
+  latency_timer_ = this->create_wall_timer(
+    timeout,
+    [this]() -> void
+    {
+      char buffer[128];
+      static std::string command = "ping -W 2 -c 1 " + server_ip_;
+      auto startTime = std::chrono::high_resolution_clock::now();
+      system(command.c_str());
+      auto endTime = std::chrono::high_resolution_clock::now();
+      auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+      // Parse the command for the latency
+      FILE* fp = popen(command.c_str(), "r");
+      if (fp == nullptr) {
+        std::cerr << "Failed to run command. Offloading turned off." << std::endl;
+        offload_status_ = false;
+      }
+
+      // Read the command output into a string
+      std::string output = "";
+      while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
+          output += buffer;
+      }
+
+      // Close the file pointer
+      fclose(fp);
+
+      // Define the regex pattern to extract the latency
+      std::regex pattern("time=([0-9]+\\.[0-9]+)");  // Pattern to match time=X.XXX (latency in ms)
+      std::smatch match;
+      if (std::regex_search(output, match, pattern) && match.size() > 1) {
+        latency_ = std::stod(match.str(1));  // Extract the first capture group
+      } else {
+        offload_status_ = false; // No connection to server: can't offload
+        std::cout << "No connection to server" << std::endl;
+        return;
+      }
+
+      RCLCPP_INFO(this->get_logger(), "Elapsed time for command: %ld", elapsed_time);
+      RCLCPP_INFO(this->get_logger(), "Current Latency: %f", latency_);
+    });
 }
 
 /**
@@ -829,3 +878,4 @@ std::string Turtlebot4::get_ip()
   }
   return std::string(UNKNOWN_IP);
 }
+
