@@ -143,10 +143,12 @@ private:
   // TODO: ADD BOND PUBLISHER
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
-  rclcpp::Publisher<nav2_msgs::srv::String>::SharedPtr nav2_managers;
-  rclcpp::Publisher<std:msgs::msg::
+  rclcpp::Publisher<nav2_msgs::srv::String>::SharedPtr nav2_managers_;
+  rclcpp::Publisher<geometry_msgs::msg::String>::SharedPtr
 
-  // AMCL Publishers
+  // Offload Server Service Client
+  rclcpp::Service<nav2_msgs::srv::
+
   // Store power saver mode
   bool power_saver_;
 
