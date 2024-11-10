@@ -91,7 +91,9 @@ public:
   Turtlebot4();
   virtual ~Turtlebot4() {}
 
+
 private:
+  
   void run();
 
   // Subscription callbacks
@@ -106,6 +108,25 @@ private:
 
   // Function callbacks
   void offload_localization_function_callback();
+
+  // TODO :: ruiying
+  // localization callback functions
+  void localization_goal_response_callback(std::shared_future<GoalHandleOffloadAMCL::SharedPtr> future);
+  void localization_feedback_callback(GoalHandleOffloadAMCL::SharedPtr,
+    const std::shared_ptr<const OffloadLocalization::Feedback> feedback);
+  void localization_result_callback(const GoalHandleOffloadAMCL::WrappedResult & result);
+
+  // nav2 ComputePathToPose
+  void sendComputePathToPose(const geometry_msgs::msg::PoseStamped &start, const geometry_msgs::msg::PoseStamped &goal);
+  void pathResultCallback(const rclcpp_action::ClientGoalHandle<nav2_msgs::action::ComputePathToPose>::WrappedResult &result);
+
+  // nav2 followPath
+  void sendFollowPath(const nav_msgs::msg::Path &path);
+  void followPathResultCallback(
+        const rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowPath>::WrappedResult &result)
+  
+  // -------------------------
+  
   void dock_function_callback();
   void undock_function_callback();
   void wall_follow_left_function_callback();
@@ -178,6 +199,10 @@ private:
 
   // Actions
   std::unique_ptr<Turtlebot4Action<OffloadLocalization>> offload_localization_client_;
+  // TODO :: ruiying
+  std::unique_ptr<Turtlebot4Action<nav2_msgs::srv::ComputePathToPose>> planner_client_;
+  std::unique_ptr<Turtlebot4Action<nav2_msgs::action::FollowPath>>controller_client_;
+  // ---------------
   std::unique_ptr<Turtlebot4Action<Dock>> dock_client_;
   std::unique_ptr<Turtlebot4Action<Undock>> undock_client_;
   std::unique_ptr<Turtlebot4Action<WallFollow>> wall_follow_client_;
