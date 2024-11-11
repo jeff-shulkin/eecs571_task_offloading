@@ -136,18 +136,21 @@ private:
   // TODO: ADD BOND, CLOCK TOPIC SUBSCRIBERS
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr amcl_pose;
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr  local_costmap_map;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr  local_costmap_map_sub_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::ConstSharedPtr laser_scan_sub_;
 
   // General Publishers
   // TODO: ADD BOND PUBLISHER
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
-  rclcpp::Publisher<nav2_msgs::srv::String>::SharedPtr nav2_managers_;
-  rclcpp::Publisher<geometry_msgs::msg::String>::SharedPtr
 
-  // Offload Server Service Client
-  rclcpp::Service<nav2_msgs::srv::
+  // NAV2 Publishers for server-side processing
+  rclcpp::Publisher<nav2_msgs::srv::String>::SharedPtr nav2_managers_pub_;
+  rclcpp::Publisher<sensor_msgs::msg:LaserScan>::SharedPtr nav2_laser_scan_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_ipose_pub_;
+
+  // NAV2 Subscribers for reading the NAV2 final pose
+  //TODO: Figure out what to subsribe to here
 
   // Store power saver mode
   bool power_saver_;
