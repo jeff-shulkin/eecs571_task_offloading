@@ -999,25 +999,6 @@ std::string Turtlebot4::get_ip()
   return std::string(UNKNOWN_IP);
 }
 
-vector<long> Turtlebot4::get_cpu_times_helper(){
-  std::ifstream file("/proc/stat");
-  std::string line;
-  std::vector<long> data(8, 0); // to store the 8 CPU times
-
-  if (file.is_open()) {
-      std::getline(file, line);
-      std::istringstream iss(line);
-      std::string cpu;
-      iss >> cpu;
-      
-      // Read the 8 CPU times
-      for (int i = 0; i < 8; ++i) {
-          iss >> data[i];
-      }
-  }
-  return data;
-}
-
 double Turtlebot4::calculate_cpu_usage(){
   std::ifstream file("/proc/stat");
   std::string line;
