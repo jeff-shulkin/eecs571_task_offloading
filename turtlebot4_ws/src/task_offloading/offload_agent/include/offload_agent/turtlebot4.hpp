@@ -204,8 +204,10 @@ private:
   // Actions
   std::unique_ptr<Turtlebot4Action<OffloadLocalization>> offload_localization_client_;
   // TODO :: ruiying
-  std::unique_ptr<Turtlebot4Action<ComputePathToPose>> planner_client_;
-  std::unique_ptr<Turtlebot4Action<FollowPath>> controller_client_;
+  // std::unique_ptr<Turtlebot4Action<ComputePathToPose>> planner_client_;
+  // std::unique_ptr<Turtlebot4Action<FollowPath>> controller_client_;
+  rclcpp_action::Client<ComputePathToPose>::SharedPtr planner_client_;
+  rclcpp_action::Client<FollowPath>::SharedPtr controller_client_;
   // ---------------
   std::unique_ptr<Turtlebot4Action<Dock>> dock_client_;
   std::unique_ptr<Turtlebot4Action<Undock>> undock_client_;

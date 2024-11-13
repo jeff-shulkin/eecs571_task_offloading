@@ -17,7 +17,7 @@
  */
 
 #include "offload_agent/turtlebot4.hpp"
-#include "task_action_interfaces/action/offloadlocalization.hpp"
+#include "task_action_interfaces/action/offloadamcl.hpp"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -27,17 +27,14 @@
 #include <arpa/inet.h>
 
 #include <chrono>
-#include <regex>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
 #include <utility>
-#include <fstream>
 
 using turtlebot4::Turtlebot4;
-using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
-using GoalHandleOffloadLocalization = rclcpp_action::ServerGoalHandle<OffloadLocalization>; // TODO :: ruiying
+using AMCL = task_action_interfaces::action::Offloadamcl;
 using Dock = irobot_create_msgs::action::Dock;
 using Undock = irobot_create_msgs::action::Undock;
 using WallFollow = irobot_create_msgs::action::WallFollow;
@@ -80,31 +77,6 @@ Turtlebot4::Turtlebot4()
 
   this->declare_parameter("power_saver", true);
   power_saver_ = this->get_parameter("power_saver").as_bool();
-
-  this->declare_parameter("robot_id", "turtlebot4_default");
-  robot_id_ = this->get_parameter("robot_id").as_string();
-
-  this->declare_parameter("server_ip", "127.0.0.1");
-  server_ip_ = this->get_parameter("server_ip").as_string();
-
-  RCLCPP_INFO(this->get_logger(), "robot_id: %s", robot_id_.c_str());
-
-  // Grab the initial pose
-  this->declare_parameter("initial_pose.x", 0.0);
-  this->declare_parameter("initial_pose.y", 0.0);
-  this->declare_parameter("initial_pose.z", 0.0);
-  this->declare_parameter("initial_pose.qx", 0.0);
-  this->declare_parameter("initial_pose.qy", 0.0);
-  this->declare_parameter("initial_pose.qz", 0.0);
-  this->declare_parameter("initial_pose.qw", 0.0);
-
-  initial_pose_.position.x = this->get_parameter("initial_pose.x").as_double();
-  initial_pose_.position.y = this->get_parameter("initial_pose.y").as_double();
-  initial_pose_.position.z = this->get_parameter("initial_pose.z").as_double();
-  initial_pose_.orientation.x = this->get_parameter("initial_pose.qx").as_double();
-  initial_pose_.orientation.y = this->get_parameter("initial_pose.qy").as_double();
-  initial_pose_.orientation.z = this->get_parameter("initial_pose.qz").as_double();
-  initial_pose_.orientation.w = this->get_parameter("initial_pose.qw").as_double();
 
   button_parameters_ = {
     {CREATE3_1, "buttons.create3_1"},
@@ -175,11 +147,6 @@ Turtlebot4::Turtlebot4()
     rclcpp::SensorDataQoS(),
     std::bind(&Turtlebot4::wheel_status_callback, this, std::placeholders::_1));
 
-  lidar_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
-    "scan",
-    rclcpp::SensorDataQoS(),
-    std::bind(&Turtlebot4::lidar_callback, this, std::placeholders::_1));
-
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
@@ -190,7 +157,9 @@ Turtlebot4::Turtlebot4()
     rclcpp::QoS(rclcpp::KeepLast(10)));
 
   // Create action/service clients
-  offload_localization_client_ = std::make_unique<turtlebot4::Turtlebot4Action<OffloadLocalization>>(node_handle_, "offload_localization");
+  // OUR ADDITIONAL ACTION CLIENTS: OFFLOAD AMCL, OFFLOAD COSTMAPS
+  offload_amcl_client_ = std::make_unique<turtlebot4::Turtlebot4Action<AMCL>>(node_handle_, "offload_amcl");
+  //offload_costmap_client_ = std::make_unique<Turtlebot4Action<Costmap>>(node_handle_, "offload_costmap");
   dock_client_ = std::make_unique<Turtlebot4Action<Dock>>(node_handle_, "dock");
   undock_client_ = std::make_unique<Turtlebot4Action<Undock>>(node_handle_, "undock");
   wall_follow_client_ = std::make_unique<Turtlebot4Action<WallFollow>>(node_handle_, "wall_follow");
@@ -212,26 +181,9 @@ Turtlebot4::Turtlebot4()
     node_handle_,
     "oakd/stop_camera");
 
-  // TODO :: ruiying
-  // bind the result and feedback callback functions from localization server
-  auto localization_send_goal_options = rclcpp_action::Client<OffloadLocalization>::SendGoalOptions();
-  localization_send_goal_options.goal_response_callback =
-    std::bind(&Turtlebot4::localization_goal_response_callback, this, std::placeholders::_1);
-  localization_send_goal_options.feedback_callback =
-    std::bind(&Turtlebot4::localization_feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
-  localization_send_goal_options.result_callback =
-    std::bind(&Turtlebot4::localization_result_callback, this, std::placeholders::_1);
-  // -----------------
-
-
-  // planner_client_ = std::make_unique<turtlebot4::Turtlebot4Action<nav2_msgs::action::ComputePathToPose>>(node_handle_, "compute_path_to_pose");
-
-  // controller_client_ = std::make_unique<turtlebot4::Turtlebot4Action<nav2_msgs::action::FollowPath>>(node_handle_, "follow_path");
-  planner_client_ = rclcpp_action::create_client<nav2_msgs::action::ComputePathToPose>(this, "compute_path_to_pose");
-  controller_client_ = rclcpp_action::create_client<nav2_msgs::action::FollowPath>(this, "follow_path");
-
   function_callbacks_ = {
-    {"Offload Localization", std::bind(&Turtlebot4::offload_localization_function_callback, this)},
+    {"Offload AMCL", std::bind(&Turtlebot4::offload_amcl_function_callback, this)},
+    //{"Offload Costmap", std::bind(&Turtlebot4::offload_costmap_function_callback, this)},
     {"Dock", std::bind(&Turtlebot4::dock_function_callback, this)},
     {"Undock", std::bind(&Turtlebot4::undock_function_callback, this)},
     {"Wall Follow Left", std::bind(&Turtlebot4::wall_follow_left_function_callback, this)},
@@ -284,56 +236,9 @@ void Turtlebot4::run()
     leds_timer(std::chrono::milliseconds(LEDS_TIMER_PERIOD));
   }
 
-  latency_timer(std::chrono::milliseconds(LATENCY_TIMER_PERIOD));
   buttons_timer(std::chrono::milliseconds(BUTTONS_TIMER_PERIOD));
   wifi_timer(std::chrono::milliseconds(WIFI_TIMER_PERIOD));
   comms_timer(std::chrono::milliseconds(COMMS_TIMER_PERIOD));
-  offload_timer(std::chrono::milliseconds(OFFLOAD_TIMER_PERIOD));
-}
-
-
-void Turtlebot4::latency_timer(const std::chrono::milliseconds timeout)
-{
-  latency_timer_ = this->create_wall_timer(
-    timeout,
-    [this]() -> void
-    {
-      char buffer[128];
-      static std::string command = "ping -W 2 -c 1 " + server_ip_;
-      auto startTime = std::chrono::high_resolution_clock::now();
-      system(command.c_str());
-      auto endTime = std::chrono::high_resolution_clock::now();
-      auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
-      // Parse the command for the latency
-      FILE* fp = popen(command.c_str(), "r");
-      if (fp == nullptr) {
-        std::cerr << "Failed to run command. Offloading turned off." << std::endl;
-        offload_status_ = false;
-      }
-
-      // Read the command output into a string
-      std::string output = "";
-      while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
-          output += buffer;
-      }
-
-      // Close the file pointer
-      fclose(fp);
-
-      // Define the regex pattern to extract the latency
-      std::regex pattern("time=([0-9]+\\.[0-9]+)");  // Pattern to match time=X.XXX (latency in ms)
-      std::smatch match;
-      if (std::regex_search(output, match, pattern) && match.size() > 1) {
-        latency_ = std::stod(match.str(1));  // Extract the first capture group
-      } else {
-        offload_status_ = false; // No connection to server: can't offload
-        std::cout << "No connection to server" << std::endl;
-        return;
-      }
-
-      RCLCPP_INFO(this->get_logger(), "Elapsed time for command: %ld", elapsed_time);
-      RCLCPP_INFO(this->get_logger(), "Current Latency: %f", latency_);
-    });
 }
 
 /**
@@ -429,17 +334,6 @@ void Turtlebot4::comms_timer(const std::chrono::milliseconds timeout)
     });
 }
 
-void Turtlebot4::offload_timer(const std::chrono::milliseconds timeout)
-{
-  offload_timer_ = this->create_wall_timer(
-    timeout,
-    [this]() -> void
-    {
-      RCLCPP_INFO(this->get_logger(), "Sending Action to Offload Server");
-      offload_localization_function_callback();
-    });
-}
-
 /**
  * @brief Creates and runs timer for powering off the robot when low battery
  * @input timeout - Sets timer period in milliseconds
@@ -453,12 +347,6 @@ void Turtlebot4::power_off_timer(const std::chrono::milliseconds timeout)
       RCLCPP_INFO(this->get_logger(), "Powering off");
       power_function_callback();
     });
-}
-
-void Turtlebot4::lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg)
-{
-  RCLCPP_INFO(this->get_logger(), "Grabbing latest lidar data");
-  latest_lidar_msg_ = *lidar_msg;
 }
 
 /**
@@ -539,8 +427,6 @@ void Turtlebot4::wheel_status_callback(
   }
 }
 
-
-
 /**
  * @brief Sends lightring action goal
  */
@@ -565,138 +451,6 @@ void Turtlebot4::low_battery_animation()
     RCLCPP_ERROR(this->get_logger(), "LED animation client NULL");
   }
 }
-
-
-void Turtlebot4::offload_localization_function_callback()
-{
-  if (offload_localization_client_ != nullptr) {
-    RCLCPP_INFO(this->get_logger(), "Offload Localization");
-    // Initialize Goal message
-    auto goal_msg = std::make_shared<OffloadLocalization::Goal>();
-
-    goal_msg->robot_id = robot_id_; // Grab robot id from launch parameters
-    goal_msg->status = offload_status_; // Grab whether we want to offload or not from status private variable
-
-    goal_msg->initial_pose.pose.pose = initial_pose_; // Grab stored initial pose from turtlebot4
-    goal_msg->initial_pose.pose.covariance = {
-                                        1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                        0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-                                        0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-                                        0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-                                        0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-                                        0.0, 0.0, 0.0, 0.0, 0.0, 1.0
-                                       };
-
-    goal_msg->laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
-
-    goal_msg->deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
-
-    offload_localization_client_->send_goal(goal_msg);
-  } else {
-    RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
-  }
-
-}
-
-// TODO :: ruiying
-void Turtlebot4::localization_goal_response_callback(GoalHandleOffloadLocalization::SharedPtr goal_handle){
-  if (!goal_handle) {
-    RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
-  } else {
-    RCLCPP_INFO(this->get_logger(), "Goal accepted by server, waiting for result");
-  }
-}
-
-void Turtlebot4::localization_feedback_callback(GoalHandleOffloadLocalization::SharedPtr,
-  const std::shared_ptr<const OffloadLocalization::Feedback> feedback) {
-  // TODO: Implement feedback
-}
-
-void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalization::WrappedResult & result){
-  switch (result.code) {
-    case rclcpp_action::ResultCode::SUCCEEDED:
-      break;
-    case rclcpp_action::ResultCode::ABORTED:
-      RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
-      return;
-    case rclcpp_action::ResultCode::CANCELED:
-      RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
-      return;
-    default:
-      RCLCPP_ERROR(this->get_logger(), "Unknown result code");
-      return;
-  }
-
-  // Handle the result_position here!
-  geometry_msgs::msg::PoseStamped start_pose;
-  start_pose.pose = initial_pose_;
-
-  geometry_msgs::msg::PoseStamped goal_pose;
-  goal_pose.header = result.result->final_pose.header;
-  goal_pose.pose = result.result->final_pose.pose.pose;
-
-  sendComputePathToPose(start_pose, goal_pose); // start and end
-  //sendComputePathToPose(initial_pose_, result.result->final_pose);
-}
-
-void Turtlebot4::sendComputePathToPose(const geometry_msgs::msg::PoseStamped &start, const geometry_msgs::msg::PoseStamped &goal) {
-  // Create the goal message
-  auto goal_msg = nav2_msgs::action::ComputePathToPose::Goal();
-  goal_msg.start = start;
-  goal_msg.goal = goal;
-
-  // Send the goal asynchronously
-  auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::ComputePathToPose>::SendGoalOptions();
-  send_goal_options.result_callback = std::bind(&Turtlebot4::pathResultCallback, this, std::placeholders::_1);
-
-  planner_client_->async_send_goal(goal_msg, send_goal_options);
-  // planner_client_->send_goal(goal_msg);
-}
-
-void Turtlebot4::pathResultCallback(const rclcpp_action::ClientGoalHandle<nav2_msgs::action::ComputePathToPose>::WrappedResult &result) {
-  if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
-      RCLCPP_INFO(this->get_logger(), "Path successfully computed!");
-      // Process the path
-      sendFollowPath(result.result->path);
-  } else {
-      RCLCPP_ERROR(this->get_logger(), "Failed to compute path!");
-  }
-}
-
-void Turtlebot4::sendFollowPath(const nav_msgs::msg::Path &path) {
-  // Create the goal message for FollowPath
-  auto goal_msg = nav2_msgs::action::FollowPath::Goal();
-  goal_msg.path = path;
-  goal_msg.controller_id = "";  // Use the default controller
-  goal_msg.goal_checker_id = ""; // Use the default goal checker
-
-  // Send the goal asynchronously
-  auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::FollowPath>::SendGoalOptions();
-  send_goal_options.result_callback = std::bind(&Turtlebot4::followPathResultCallback, this, std::placeholders::_1);
-
-  //follow_path_client_->async_send_goal(goal_msg, send_goal_options);
-  controller_client_->async_send_goal(goal_msg, send_goal_options);
-  // controller_client_->send_goal(goal_msg);
-}
-
-void Turtlebot4::followPathResultCallback(
-        const rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowPath>::WrappedResult &result) {
-
-  if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
-      RCLCPP_INFO(this->get_logger(), "FollowPath action succeeded!");
-      // Process the velocity command if needed
-      // The controller generates and sends velocity commands directly to the robot
-  } else if (result.code == rclcpp_action::ResultCode::ABORTED) {
-      RCLCPP_ERROR(this->get_logger(), "FollowPath action was aborted!");
-  } else if (result.code == rclcpp_action::ResultCode::CANCELED) {
-      RCLCPP_WARN(this->get_logger(), "FollowPath action was canceled!");
-  } else {
-      RCLCPP_ERROR(this->get_logger(), "Unknown result code from FollowPath!");
-  }
-}
-
-// ---------------------------------------
-
 
 /**
  * @brief Sends dock action goal
@@ -999,3 +753,29 @@ std::string Turtlebot4::get_ip()
   return std::string(UNKNOWN_IP);
 }
 
+
+/**
+ * @brief Sends offload_amcl action goal
+ */
+void Turtlebot4::offload_amcl_function_callback()
+{
+  if (offload_amcl_client_ != nullptr) {
+    RCLCPP_INFO(this->get_logger(), "Offloading AMCL Calculations");
+    offload_amcl_client_->send_goal();
+  } else {
+    RCLCPP_ERROR(this->get_logger(), "Offload AMCL client NULL");
+  }
+}
+
+/**
+ * @brief Sends offload_costmaps action goal
+// */
+//void OffloadAgent::offload_costmaps_function_callback()
+//{
+//  if (offload_costmap_client_ != nullptr) {
+//    RCLCPP_INFO(this->get_logger(), "Offloading local costmap computations");
+//    offload_costmap_client_->send_goal();
+//  } else {
+//    RCLCPP_ERROR(this->get_logger(), "Undock client NULL");
+//  }
+//}
