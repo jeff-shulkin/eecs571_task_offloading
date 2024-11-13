@@ -999,3 +999,40 @@ std::string Turtlebot4::get_ip()
   return std::string(UNKNOWN_IP);
 }
 
+CpuData Turtlebot4::get_cpu_times_helper(){
+  std::ifstream file("/proc/stat");
+  std::string line;
+  CpuData data = {0};
+
+  if (file.is_open()) {
+      std::getline(file, line);
+      std::istringstream iss(line);
+      std::string cpu;
+      iss >> cpu >> data.user >> data.nice >> data.system >> data.idle >> data.iowait >> data.irq >> data.softirq >> data.steal;
+  }
+  return data;
+}
+
+double Turtlebot4::calculate_cpu_usage(){
+  CpuData prev = get_cpu_times();
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  CpuData curr = get_cpu_times();
+
+  // Calculating CPU load
+
+  long prev_idle = prev.idle + prev.iowait;
+  long curr_idle = curr.idle + curr.iowait;
+
+  long prev_non_idle = prev.user + prev.nice + prev.system + prev.irq + prev.softirq + prev.steal;
+  long curr_non_idle = curr.user + curr.nice + curr.system + curr.irq + curr.softirq + curr.steal;
+
+  long prev_total = prev_idle + prev_non_idle;
+  long curr_total = curr_idle + curr_non_idle;
+
+  double total_delta = curr_total - prev_total;
+  double idle_delta = curr_idle - prev_idle;
+
+  cpu_usage = (total_delta - idle_delta) / total_delta * 100.0;
+
+  return cpu_usage;
+}

@@ -154,6 +154,10 @@ private:
 
   void low_battery_animation();
 
+  // CPU Loads
+  CpuData get_cpu_times_helper();
+  double calculate_cpu_usage();
+
   // Run Offload Localization timer
   void offload_timer(const std::chrono::milliseconds timeout);
 
@@ -200,6 +204,7 @@ private:
 
   // Leds
   std::unique_ptr<Leds> leds_;
+
 
   // Actions
   std::unique_ptr<Turtlebot4Action<OffloadLocalization>> offload_localization_client_;
@@ -268,6 +273,12 @@ private:
 
   // Store current round-trip latency
   double latency_ = 0.0;
+
+  // Store current CPU load
+  double cpu_usage = 0.0;
+  struct CpuData {
+    long user, nice, system, idle, iowait, irq, softirq, steal;
+  };
 
   // Turtlebot4 Model
   Turtlebot4Model model_;
