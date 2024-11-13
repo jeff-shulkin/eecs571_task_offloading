@@ -28,7 +28,8 @@ find_package(nav2_common REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(nav2_amcl REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
-
+find_package(nav2_lifecycle_manager REQUIRED)
+find_package(nav2_util REQUIRED)
 # Include Task action interfaces
 find_package(task_action_interfaces REQUIRED)
 
@@ -60,6 +61,8 @@ set(DEPENDENCIES
   "nav2_msgs"
   "nav2_amcl"
   "nav2_costmap_2d"
+  "nav2_lifecycle_manager"
+  "nav2_util"
   "task_action_interfaces"
 )
 

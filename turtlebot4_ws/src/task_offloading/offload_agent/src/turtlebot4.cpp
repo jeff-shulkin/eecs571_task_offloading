@@ -37,7 +37,7 @@
 
 using turtlebot4::Turtlebot4;
 using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
-using GoalHandleOffloadAMCL = rclcpp_action::ServerGoalHandle<OffloadLocalization>; // TODO :: ruiying
+using GoalHandleOffloadLocalization = rclcpp_action::ServerGoalHandle<OffloadLocalization>; // TODO :: ruiying
 using Dock = irobot_create_msgs::action::Dock;
 using Undock = irobot_create_msgs::action::Undock;
 using WallFollow = irobot_create_msgs::action::WallFollow;
@@ -214,17 +214,17 @@ Turtlebot4::Turtlebot4()
 
   // TODO :: ruiying
   // bind the result and feedback callback functions from localization server
-  auto localization_send_goal_options = turtlebot4::Turtlebot4Action<OffloadLocalization>::SendGoalOptions();
-  send_goal_options.goal_response_callback =
-    std::bind(&Turtlebot4::localization_goal_response_callback, this, _1);
-  send_goal_options.feedback_callback =
-    std::bind(&Turtlebot4::localization_feedback_callback, this, _1, _2);
-  send_goal_options.result_callback =
-    std::bind(&Turtlebot4::localization_result_callback, this, _1);
+  auto localization_send_goal_options = rclcpp_action::Client<OffloadLocalization>::SendGoalOptions();
+  localization_send_goal_options.goal_response_callback =
+    std::bind(&Turtlebot4::localization_goal_response_callback, this, std::placeholders::_1);
+  localization_send_goal_options.feedback_callback =
+    std::bind(&Turtlebot4::localization_feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
+  localization_send_goal_options.result_callback =
+    std::bind(&Turtlebot4::localization_result_callback, this, std::placeholders::_1);
   // -----------------
-  
 
-  planner_client_ = std::make_unique<turtlebot4::Turtlebot4Action<nav2_msgs::srv::ComputePathToPose>>(node_handle_, "compute_path_to_pose");
+
+  planner_client_ = std::make_unique<turtlebot4::Turtlebot4Action<nav2_msgs::action::ComputePathToPose>>(node_handle_, "compute_path_to_pose");
 
   controller_client_ = std::make_unique<turtlebot4::Turtlebot4Action<nav2_msgs::action::FollowPath>>(node_handle_, "follow_path");
 
@@ -597,8 +597,7 @@ void Turtlebot4::offload_localization_function_callback()
 }
 
 // TODO :: ruiying
-void Turtlebot4::localization_goal_response_callback(std::shared_future<GoalHandleOffloadAMCL::SharedPtr> future){
-  auto goal_handle = future.get();
+void Turtlebot4::localization_goal_response_callback(GoalHandleOffloadLocalization::SharedPtr goal_handle){
   if (!goal_handle) {
     RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
   } else {
@@ -606,12 +605,12 @@ void Turtlebot4::localization_goal_response_callback(std::shared_future<GoalHand
   }
 }
 
-void Turtlebot4::localization_feedback_callback(GoalHandleOffloadAMCL::SharedPtr,
-  const std::shared_ptr<const AMCL::Feedback> feedback){
-
+void Turtlebot4::localization_feedback_callback(GoalHandleOffloadLocalization::SharedPtr,
+  const std::shared_ptr<const OffloadLocalization::Feedback> feedback) {
+  // TODO: Implement feedback
 }
 
-void Turtlebot4::localization_result_callback(const GoalHandleOffloadAMCL::WrappedResult & result){
+void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalization::WrappedResult & result){
   switch (result.code) {
     case rclcpp_action::ResultCode::SUCCEEDED:
       break;
@@ -628,13 +627,14 @@ void Turtlebot4::localization_result_callback(const GoalHandleOffloadAMCL::Wrapp
 
   // Handle the result_position here!
   geometry_msgs::msg::PoseStamped start_pose;
-  start_pose.pose = intial_pose_.pose;
+  start_pose.pose = initial_pose_;
 
   geometry_msgs::msg::PoseStamped goal_pose;
-  goal_pose.header = result.result.pose.header;
-  goal_pose.pose = result.result.pose.pose;
+  goal_pose.header = result.result->final_pose.header;
+  goal_pose.pose = result.result->final_pose.pose.pose;
 
   sendComputePathToPose(start_pose, goal_pose); // start and end
+  //sendComputePathToPose(initial_pose_, result.result->final_pose);
 }
 
 void Turtlebot4::sendComputePathToPose(const geometry_msgs::msg::PoseStamped &start, const geometry_msgs::msg::PoseStamped &goal) {
@@ -647,15 +647,15 @@ void Turtlebot4::sendComputePathToPose(const geometry_msgs::msg::PoseStamped &st
   auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::ComputePathToPose>::SendGoalOptions();
   send_goal_options.result_callback = std::bind(&Turtlebot4::pathResultCallback, this, std::placeholders::_1);
 
-  path_action_client_->async_send_goal(goal_msg, send_goal_options);
-
+  //planner_client_->async_send_goal(goal_msg, send_goal_options);
+  planner_client_->send_goal(goal_msg);
 }
 
 void Turtlebot4::pathResultCallback(const rclcpp_action::ClientGoalHandle<nav2_msgs::action::ComputePathToPose>::WrappedResult &result) {
   if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
       RCLCPP_INFO(this->get_logger(), "Path successfully computed!");
       // Process the path
-      callFollowPath(result.result->path);
+      sendFollowPath(result.result->path);
   } else {
       RCLCPP_ERROR(this->get_logger(), "Failed to compute path!");
   }
@@ -672,7 +672,9 @@ void Turtlebot4::sendFollowPath(const nav_msgs::msg::Path &path) {
   auto send_goal_options = rclcpp_action::Client<nav2_msgs::action::FollowPath>::SendGoalOptions();
   send_goal_options.result_callback = std::bind(&Turtlebot4::followPathResultCallback, this, std::placeholders::_1);
 
-  follow_path_client_->async_send_goal(goal_msg, send_goal_options);
+  //follow_path_client_->async_send_goal(goal_msg, send_goal_options);
+  //controller_client_->async_send_goal(goal_msg, send_goal_options);
+  controller_client_->send_goal(goal_msg);
 }
 
 void Turtlebot4::followPathResultCallback(

@@ -38,6 +38,8 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <std_srvs/srv/trigger.hpp>
+#include <nav2_util/service_client.hpp>
+
 
 #include "irobot_create_msgs/msg/wheel_status.hpp"
 #include "irobot_create_msgs/msg/lightring_leds.hpp"
@@ -82,8 +84,8 @@ private:
   void run();
 
   // Subscription callbacks
-  void battery_callback(const sensor_msgs::msg::BatteryState::SharedPtr battery_state_msg);
-  void laser_scan_callback(const sensor_msgs::msg::LaserScan::ConstSharedPtr laser_scan_msg);
+  void amcl_pose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr amcl_pose_msg);
+  void local_costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr local_costmap_msg);
 
   // Function callbacks
   void offload_localization_function_callback();
@@ -132,28 +134,35 @@ private:
   rclcpp::TimerBase::SharedPtr wifi_timer_;
   rclcpp::TimerBase::SharedPtr power_off_timer_;
 
-  // General Subscribers
-  // TODO: ADD BOND, CLOCK TOPIC SUBSCRIBERS
-  rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr amcl_pose;
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr  local_costmap_map_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::ConstSharedPtr laser_scan_sub_;
-
   // General Publishers
-  // TODO: ADD BOND PUBLISHER
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
 
-  // NAV2 Publishers for server-side processing
-  rclcpp::Publisher<nav2_msgs::srv::String>::SharedPtr nav2_managers_pub_;
-  rclcpp::Publisher<sensor_msgs::msg:LaserScan>::SharedPtr nav2_laser_scan_pub_;
+  // Nav2 Publishers for server-side processing
+  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr nav2_laser_scan_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_ipose_pub_;
 
-  // NAV2 Subscribers for reading the NAV2 final pose
-  //TODO: Figure out what to subsribe to here
+  // Nav2 Subscribers for server-side data reception
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_amcl_rpose_sub_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr  local_costmap_map_sub_;
+
+  // Nav2 Service for managing localization lifecycle
+  rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_managers_;
 
   // Store power saver mode
   bool power_saver_;
+
+  // Store latest LiDAR data sent from offload_agent
+  sensor_msgs::msg::LaserScan latest_lidar_msg_;
+
+  // Store initial pose sent from offload agent
+  geometry_msgs::msg::PoseWithCovarianceStamped offload_amcl_ipose_;
+
+  // Store localization pose received from offload_server
+  geometry_msgs::msg::PoseWithCovarianceStamped offload_amcl_rpose_;
+
+  // Store costmap received from offload_server
+  nav_msgs::msg::OccupancyGrid offload_local_rcostmap_;
 
   // Store server scheduling algorithm
   ServerSchedulingAlgo algo_;

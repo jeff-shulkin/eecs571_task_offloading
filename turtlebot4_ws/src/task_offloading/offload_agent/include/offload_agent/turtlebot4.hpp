@@ -48,6 +48,9 @@
 #include "irobot_create_msgs/srv/e_stop.hpp"
 #include "irobot_create_msgs/srv/robot_power.hpp"
 
+#include "nav2_msgs/action/compute_path_to_pose.hpp"
+#include "nav2_msgs/action/follow_path.hpp"
+
 #include "task_action_interfaces/action/offloadlocalization.hpp"
 
 
@@ -77,7 +80,9 @@ class Turtlebot4 : public rclcpp::Node
 public:
   // Type alias for actions and services
   using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
-  //using Costmap = irobot_create_msgs::action::OffloadCostmap;
+  using GoalHandleOffloadLocalization = rclcpp_action::ClientGoalHandle<OffloadLocalization>;
+  using ComputePathToPose = nav2_msgs::action::ComputePathToPose;
+  using FollowPath = nav2_msgs::action::FollowPath;
   using Dock = irobot_create_msgs::action::Dock;
   using Undock = irobot_create_msgs::action::Undock;
   using WallFollow = irobot_create_msgs::action::WallFollow;
@@ -93,7 +98,7 @@ public:
 
 
 private:
-  
+
   void run();
 
   // Subscription callbacks
@@ -111,10 +116,10 @@ private:
 
   // TODO :: ruiying
   // localization callback functions
-  void localization_goal_response_callback(std::shared_future<GoalHandleOffloadAMCL::SharedPtr> future);
-  void localization_feedback_callback(GoalHandleOffloadAMCL::SharedPtr,
+  void localization_goal_response_callback(GoalHandleOffloadLocalization::SharedPtr goal_handle);
+  void localization_feedback_callback(GoalHandleOffloadLocalization::SharedPtr,
     const std::shared_ptr<const OffloadLocalization::Feedback> feedback);
-  void localization_result_callback(const GoalHandleOffloadAMCL::WrappedResult & result);
+  void localization_result_callback(const GoalHandleOffloadLocalization::WrappedResult & result);
 
   // nav2 ComputePathToPose
   void sendComputePathToPose(const geometry_msgs::msg::PoseStamped &start, const geometry_msgs::msg::PoseStamped &goal);
@@ -122,11 +127,10 @@ private:
 
   // nav2 followPath
   void sendFollowPath(const nav_msgs::msg::Path &path);
-  void followPathResultCallback(
-        const rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowPath>::WrappedResult &result)
-  
+  void followPathResultCallback(const rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowPath>::WrappedResult &result);
+
   // -------------------------
-  
+
   void dock_function_callback();
   void undock_function_callback();
   void wall_follow_left_function_callback();
@@ -200,8 +204,8 @@ private:
   // Actions
   std::unique_ptr<Turtlebot4Action<OffloadLocalization>> offload_localization_client_;
   // TODO :: ruiying
-  std::unique_ptr<Turtlebot4Action<nav2_msgs::srv::ComputePathToPose>> planner_client_;
-  std::unique_ptr<Turtlebot4Action<nav2_msgs::action::FollowPath>>controller_client_;
+  std::unique_ptr<Turtlebot4Action<ComputePathToPose>> planner_client_;
+  std::unique_ptr<Turtlebot4Action<FollowPath>> controller_client_;
   // ---------------
   std::unique_ptr<Turtlebot4Action<Dock>> dock_client_;
   std::unique_ptr<Turtlebot4Action<Undock>> undock_client_;

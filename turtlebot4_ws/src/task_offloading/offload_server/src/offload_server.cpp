@@ -89,21 +89,28 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
 
   RCLCPP_INFO(node_handle_->get_logger(), "offload_localization action server instantiated");
 
-  // Subscriptions
-  battery_sub_ = this->create_subscription<sensor_msgs::msg::BatteryState>(
-    "battery_state",
-    rclcpp::SensorDataQoS(),
-    std::bind(&OffloadServer::battery_callback, this, std::placeholders::_1));
+  // Nav2 manager client service
+  //localization_manager_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("/lifecycle_manager_localization/manage_nodes", node_handle_);
 
-  laser_scan_sub_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
-    "laser_scan",
+  // Nav2 Subscriptions
+  nav2_amcl_rpose_sub_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "amcl_pose",
     rclcpp::SensorDataQoS(),
-    std::bind(&OffloadServer::laser_scan_callback, this, std::placeholders::_1));
+    std::bind(&OffloadServer::amcl_pose_callback, this, std::placeholders::_1));
+
+  local_costmap_map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+    "offload_local_costmap_map",
+    rclcpp::SensorDataQoS(),
+    std::bind(&OffloadServer::local_costmap_callback, this, std::placeholders::_1));
 
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
     rclcpp::QoS(rclcpp::KeepLast(10)));
+
+  nav2_ipose_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "offload_initial_pose",
+   rclcpp::QoS(rclcpp::KeepLast(10)));
 
   run();
 }
@@ -181,14 +188,25 @@ std::string OffloadServer::get_ip()
   return std::string(UNKNOWN_IP);
 }
 
-void OffloadServer::battery_callback(std::shared_ptr<sensor_msgs::msg::BatteryState> msg) {
-	RCLCPP_INFO(this->get_logger(), "Battery callback triggered");
-	(void)msg;
+void OffloadServer::amcl_pose_callback(std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped> amcl_pose_msg) {
+    RCLCPP_INFO(this->get_logger(), "Battery callback triggered");
     // Handle battery state
+    // Check frame id to make sure it came from offload server
+    if (amcl_pose_msg->header.frame_id == "offload_server/map") {
+      RCLCPP_INFO(this->get_logger(), "received amcl pose from offload_server");
+      offload_amcl_rpose_ = *amcl_pose_msg;
+      offload_amcl_rpose_.header.frame_id = "map";
+    }
 }
 
-void OffloadServer::laser_scan_callback(std::shared_ptr<const sensor_msgs::msg::LaserScan> msg) {
-	RCLCPP_INFO(this->get_logger(), "Laser scan callback triggered");
-	(void)msg;
-    // Handle laser scan data
+void OffloadServer::local_costmap_callback(std::shared_ptr<nav_msgs::msg::OccupancyGrid> local_costmap_msg) {
+    RCLCPP_INFO(this->get_logger(), "offload local costmap callback triggered");
+    // Handle local costmap
+    // Check frame id to make sure it came from offload server
+    if (local_costmap_msg->header.frame_id == "offload_server/costmap") {
+      RCLCPP_INFO(this->get_logger(), "received costmap from offload_server");
+      offload_local_rcostmap_ = *local_costmap_msg;
+      offload_local_rcostmap_.header.frame_id = "map";
+    }
 }
+
