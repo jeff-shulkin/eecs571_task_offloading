@@ -154,9 +154,7 @@ private:
 
   void low_battery_animation();
 
-  // CPU Loads
-  CpuData get_cpu_times_helper();
-  double calculate_cpu_usage();
+  double calculate_cpu_usage(); // TODO :: ruiying
 
   // Run Offload Localization timer
   void offload_timer(const std::chrono::milliseconds timeout);
@@ -275,10 +273,7 @@ private:
   double latency_ = 0.0;
 
   // Store current CPU load
-  double cpu_usage = 0.0;
-  struct CpuData {
-    long user, nice, system, idle, iowait, irq, softirq, steal;
-  };
+  double cpu_load = 0.0;
 
   // Turtlebot4 Model
   Turtlebot4Model model_;

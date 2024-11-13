@@ -999,40 +999,51 @@ std::string Turtlebot4::get_ip()
   return std::string(UNKNOWN_IP);
 }
 
-CpuData Turtlebot4::get_cpu_times_helper(){
+vector<long> Turtlebot4::get_cpu_times_helper(){
   std::ifstream file("/proc/stat");
   std::string line;
-  CpuData data = {0};
+  std::vector<long> data(8, 0); // to store the 8 CPU times
 
   if (file.is_open()) {
       std::getline(file, line);
       std::istringstream iss(line);
       std::string cpu;
-      iss >> cpu >> data.user >> data.nice >> data.system >> data.idle >> data.iowait >> data.irq >> data.softirq >> data.steal;
+      iss >> cpu;
+      
+      // Read the 8 CPU times
+      for (int i = 0; i < 8; ++i) {
+          iss >> data[i];
+      }
   }
   return data;
 }
 
 double Turtlebot4::calculate_cpu_usage(){
-  CpuData prev = get_cpu_times();
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
-  CpuData curr = get_cpu_times();
+  std::ifstream file("/proc/stat");
+  std::string line;
+  
+  // These will hold the individual CPU times
+  long user, nice, system, idle, iowait, irq, softirq, steal;
 
-  // Calculating CPU load
+  if (file.is_open()) {
+      std::getline(file, line);
+      std::istringstream iss(line);
+      std::string cpu;
+      
+      // Skip the "cpu" prefix in the first column
+      iss >> cpu;
+      
+      // Read the CPU times from /proc/stat
+      iss >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
+      
+      // Calculate total time and active time
+      long total_time = user + nice + system + idle + iowait + irq + softirq + steal;
+      long active_time = user + nice + system + irq + softirq + steal;
+      
+      // Calculate CPU utilization as a percentage
+      cpu_load = static_cast<double>(active_time) / total_time * 100.0;
+      return cpu_load;
+  }
 
-  long prev_idle = prev.idle + prev.iowait;
-  long curr_idle = curr.idle + curr.iowait;
-
-  long prev_non_idle = prev.user + prev.nice + prev.system + prev.irq + prev.softirq + prev.steal;
-  long curr_non_idle = curr.user + curr.nice + curr.system + curr.irq + curr.softirq + curr.steal;
-
-  long prev_total = prev_idle + prev_non_idle;
-  long curr_total = curr_idle + curr_non_idle;
-
-  double total_delta = curr_total - prev_total;
-  double idle_delta = curr_idle - prev_idle;
-
-  cpu_usage = (total_delta - idle_delta) / total_delta * 100.0;
-
-  return cpu_usage;
+  return 0.0;  // failed to open file
 }
