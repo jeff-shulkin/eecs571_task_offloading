@@ -104,6 +104,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     std::bind(&OffloadServer::local_costmap_callback, this, std::placeholders::_1));
 
   // Publishers
+
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
     rclcpp::QoS(rclcpp::KeepLast(10)));
@@ -111,6 +112,10 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   nav2_ipose_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "offload_initial_pose",
    rclcpp::QoS(rclcpp::KeepLast(10)));
+
+  nav2_laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>(
+    "offload_laser_scan",
+  rclcpp::QoS(rclcpp::KeepLast(10)));
 
   run();
 }
