@@ -301,11 +301,11 @@ void Turtlebot4::latency_timer(const std::chrono::milliseconds timeout)
       char buffer[128];
       static std::string command = "ping -W 2 -c 1 " + server_ip_;
       auto startTime = std::chrono::high_resolution_clock::now();
-      system(command.c_str());
-      auto endTime = std::chrono::high_resolution_clock::now();
-      auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+
       // Parse the command for the latency
       FILE* fp = popen(command.c_str(), "r");
+      auto endTime = std::chrono::high_resolution_clock::now();
+      auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
       if (fp == nullptr) {
         std::cerr << "Failed to run command. Offloading turned off." << std::endl;
         offload_status_ = false;
