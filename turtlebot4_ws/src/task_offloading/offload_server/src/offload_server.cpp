@@ -90,7 +90,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   RCLCPP_INFO(node_handle_->get_logger(), "offload_localization action server instantiated");
 
   // Nav2 manager client service
-  //localization_manager_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("/lifecycle_manager_localization/manage_nodes", node_handle_);
+  nav2_localization_manager_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("/lifecycle_manager_localization/manage_nodes");
 
   // Nav2 Subscriptions
   nav2_amcl_rpose_sub_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -104,7 +104,6 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     std::bind(&OffloadServer::local_costmap_callback, this, std::placeholders::_1));
 
   // Publishers
-
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
     rclcpp::QoS(rclcpp::KeepLast(10)));

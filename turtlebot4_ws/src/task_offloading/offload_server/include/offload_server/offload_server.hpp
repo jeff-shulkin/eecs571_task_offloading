@@ -147,7 +147,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr  local_costmap_map_sub_;
 
   // Nav2 Service for managing localization lifecycle
-  rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_managers_;
+  rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_localization_manager_client_;
 
   // Store power saver mode
   bool power_saver_;
