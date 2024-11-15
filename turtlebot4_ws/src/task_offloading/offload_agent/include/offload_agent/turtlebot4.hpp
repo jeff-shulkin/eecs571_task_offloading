@@ -53,6 +53,8 @@
 
 #include "task_action_interfaces/action/offloadlocalization.hpp"
 
+#include <nav2_msgs/srv/manage_lifecycle_nodes.hpp>
+
 
 /** Supported functions
  * Dock
@@ -131,7 +133,7 @@ private:
   void followPathResultCallback(const rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowPath>::WrappedResult &result);
 
   // nav2 lifeCycle Manager
-  void sendLifeCycleManager(uint8 cmd);
+  void sendLifeCycleManager(uint8_t cmd);
 
 
   // -------------------------

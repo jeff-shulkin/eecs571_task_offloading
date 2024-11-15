@@ -17,9 +17,7 @@
  */
 
 #include "offload_agent/turtlebot4.hpp"
-#include "task_action_interfaces/action/offloadlocalization.hpp"
 
-#include "nav2_lifecycle_manager/lifecycle_manager_client.hpp" // TODO :: lifecycle_manager
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -699,12 +697,12 @@ void Turtlebot4::followPathResultCallback(
   }
 }
 
-void Turtlebot4::sendLifeCycleManager(uint8 cmd) {
+void Turtlebot4::sendLifeCycleManager(uint8_t cmd) {
   auto request = std::make_shared<ManageLifecycleNodes::Request>();
-  request->command = command;
+  request->command = cmd;
   
 
-  auto future = client_->async_send_request(request);
+  auto future = lifeCycle_client_->async_send_request(request);
 
   // Wait for the result
   try {
