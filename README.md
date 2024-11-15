@@ -15,3 +15,16 @@ sudo apt-get upgrade -y
 cd turtlebot4_ws
 ./turtlebot4_setup.sh
 ``` 
+
+# TODOs
+## offload_client
+- [ ] switch between offload and non-offload
+
+## offload_server
+- [ ] nav2 final_pose ready callback
+- [ ] global server flag RESULT_READY
+- [ ] busy wait in the scheduler.execute()
+- [ ] time the scheduler execution
+
+## turtlbot4
+- [ ] try to get internet on the turtlebot pi

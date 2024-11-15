@@ -32,8 +32,17 @@ rclcpp_action::CancelResponse OffloadServer::handle_offload_localization_cancel(
 void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle)
 {
     using namespace std::placeholders;
+
+    // create a new job based on the received goal
+    const auto goal = goal_handle->get_goal();
+    ROS2Job new_job_entry(goal->robot_id, goal->deadline_ms, goal->laser_scan, goal->initial_pose);
+
+    // add new job to the scheduler;
+    sched_.add_job(new_job_entry);
+    
     // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-    std::thread{std::bind(&OffloadServer::offload_localization_execute, this, _1), goal_handle}.detach();
+    // std::thread{std::bind(&OffloadServer::offload_localization_execute, this, _1), goal_handle}.detach();
+    
 }
 
 void OffloadServer::offload_localization_execute(const std::shared_ptr<OffloadServer::GoalHandleOffloadLocalization> goal_handle)
@@ -52,9 +61,8 @@ void OffloadServer::offload_localization_execute(const std::shared_ptr<OffloadSe
         RCLCPP_INFO(this->get_logger(), "Goal canceled");
         return;
     }
+
     
-    auto initial_pose = goal->initial_pose;
-    auto resulting_pose = (initial_pose);
     // Publish feedback
     goal_handle->publish_feedback(feedback);
     RCLCPP_INFO(this->get_logger(), "TODO: Publish feedback");

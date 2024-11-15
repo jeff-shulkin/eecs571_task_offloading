@@ -16,18 +16,12 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 
-// TODO: This looks out of date???
-enum class TaskType {
-        DEBUG = 0,
-        OFFLOAD_AMCL = 1,
-        OFFLOAD_COSTMAP = 2
-};
-
 // TODO: Figure out wtf is function<void (void)> callback
 struct ROS2Job {
         std::string agent_id;
-	std::function<void (void)> callback;
         std::chrono::milliseconds deadline;
+	sensor_msgs::msg:LaserScan laserscan;
+	geometry_msgs::msg::PoseWithCovarianceStamped ipose;
 };
 
 // Custom priority queue job comparator

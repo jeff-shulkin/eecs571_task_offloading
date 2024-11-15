@@ -24,7 +24,10 @@ void JobScheduler::add_job(ROS2Job j) {
 //}
 
 void JobScheduler::execute() {
+  if(fifo_sched_.empty())
 	ROS2Job curr_job = fifo_sched_.front();
+	nav2_ipose_pub_->publish(curr_job.ipose);
+	nav2_laser_scan_pub_->publish(curr_job.laserscan);
         fifo_sched_.pop();
 	// TODO: implement Localization processing; relay Goal to nav2 nodes
 }

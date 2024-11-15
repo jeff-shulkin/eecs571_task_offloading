@@ -117,6 +117,10 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     "offload_laser_scan",
   rclcpp::QoS(rclcpp::KeepLast(10)));
 
+  // Scheduler
+  std::thread(sched_.execute);
+  
+
   run();
 }
 
