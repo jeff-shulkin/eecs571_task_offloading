@@ -19,6 +19,8 @@
 #include "offload_agent/turtlebot4.hpp"
 #include "task_action_interfaces/action/offloadlocalization.hpp"
 
+#include "nav2_lifecycle_manager/lifecycle_manager_client.hpp" // TODO :: lifecycle_manager
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <ifaddrs.h>
@@ -229,6 +231,8 @@ Turtlebot4::Turtlebot4()
   // controller_client_ = std::make_unique<turtlebot4::Turtlebot4Action<nav2_msgs::action::FollowPath>>(node_handle_, "follow_path");
   planner_client_ = rclcpp_action::create_client<nav2_msgs::action::ComputePathToPose>(this, "compute_path_to_pose");
   controller_client_ = rclcpp_action::create_client<nav2_msgs::action::FollowPath>(this, "follow_path");
+  lifeCycle_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("/lifecycle_manager_localization/manage_nodes"); // TODO :: lifeCycle Manager
+  
 
   function_callbacks_ = {
     {"Offload Localization", std::bind(&Turtlebot4::offload_localization_function_callback, this)},
@@ -692,6 +696,26 @@ void Turtlebot4::followPathResultCallback(
       RCLCPP_WARN(this->get_logger(), "FollowPath action was canceled!");
   } else {
       RCLCPP_ERROR(this->get_logger(), "Unknown result code from FollowPath!");
+  }
+}
+
+void Turtlebot4::sendLifeCycleManager(uint8 cmd) {
+  auto request = std::make_shared<ManageLifecycleNodes::Request>();
+  request->command = command;
+  
+
+  auto future = client_->async_send_request(request);
+
+  // Wait for the result
+  try {
+      auto response = future.get();
+      if (response->success) {
+          RCLCPP_INFO(this->get_logger(), "Command executed successfully");
+      } else {
+          RCLCPP_ERROR(this->get_logger(), "Failed to execute command");
+      }
+  } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Service call failed: %s", e.what());
   }
 }
 

@@ -83,6 +83,7 @@ public:
   using GoalHandleOffloadLocalization = rclcpp_action::ClientGoalHandle<OffloadLocalization>;
   using ComputePathToPose = nav2_msgs::action::ComputePathToPose;
   using FollowPath = nav2_msgs::action::FollowPath;
+  using ManageLifecycleNodes = nav2_msgs::srv::ManageLifecycleNodes; // lifecycle_manager
   using Dock = irobot_create_msgs::action::Dock;
   using Undock = irobot_create_msgs::action::Undock;
   using WallFollow = irobot_create_msgs::action::WallFollow;
@@ -128,6 +129,10 @@ private:
   // nav2 followPath
   void sendFollowPath(const nav_msgs::msg::Path &path);
   void followPathResultCallback(const rclcpp_action::ClientGoalHandle<nav2_msgs::action::FollowPath>::WrappedResult &result);
+
+  // nav2 lifeCycle Manager
+  void sendLifeCycleManager(uint8 cmd);
+
 
   // -------------------------
 
@@ -211,6 +216,8 @@ private:
   // std::unique_ptr<Turtlebot4Action<FollowPath>> controller_client_;
   rclcpp_action::Client<ComputePathToPose>::SharedPtr planner_client_;
   rclcpp_action::Client<FollowPath>::SharedPtr controller_client_;
+  rclcpp::Client<ManageLifecycleNodes>::SharedPtr lifeCycle_client_;
+
   // ---------------
   std::unique_ptr<Turtlebot4Action<Dock>> dock_client_;
   std::unique_ptr<Turtlebot4Action<Undock>> undock_client_;
