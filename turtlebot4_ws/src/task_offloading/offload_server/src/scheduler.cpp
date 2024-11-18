@@ -9,6 +9,7 @@
 #define TASK_OFFLOAD_SCHEDULER_CPP_
 
 #include "offload_server/scheduler.hpp" // Includes C++ boost and ROS2 libraries
+#include "offload_server/offloader_server.hpp" //Access Nav2 flags
 #include <chrono> // for high_resolution_timer
 #include <thread>
 #include <functional>
@@ -24,12 +25,19 @@ void JobScheduler::add_job(ROS2Job j) {
 //}
 
 void JobScheduler::execute() {
-  if(fifo_sched_.empty())
+  if(!fifo_sched_.empty()) {
 	ROS2Job curr_job = fifo_sched_.front();
 	nav2_ipose_pub_->publish(curr_job.ipose);
 	nav2_laser_scan_pub_->publish(curr_job.laserscan);
+	while(!FPOSE_READY) { continue; } // CAUTION: busy looping is bad
+	FPOSE_READY = false;
+	auto result = std::make_shared<OffloadServer:Offloadlocalization::Result>();
+	result->success = true;
+	result->final_pose = offload_amcl_rpose;
+	result->exec_time = 0.0f;
+	curr_job.goal_handle->succeed(result);
         fifo_sched_.pop();
-	// TODO: implement Localization processing; relay Goal to nav2 nodes
+  }
 }
 
 #endif

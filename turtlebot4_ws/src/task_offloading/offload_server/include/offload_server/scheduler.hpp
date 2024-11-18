@@ -16,8 +16,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 
-// TODO: Figure out wtf is function<void (void)> callback
 struct ROS2Job {
+	const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle;
         std::string agent_id;
         std::chrono::milliseconds deadline;
 	sensor_msgs::msg:LaserScan laserscan;

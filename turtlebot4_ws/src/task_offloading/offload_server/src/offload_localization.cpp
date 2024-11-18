@@ -35,47 +35,19 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
 
     // create a new job based on the received goal
     const auto goal = goal_handle->get_goal();
-    ROS2Job new_job_entry(goal->robot_id, goal->deadline_ms, goal->laser_scan, goal->initial_pose);
+
+    // update the ipose member variable to the latest data
+    offload_amcl_ipose = initial_pose;
+    
+    // create new job entry based on the goal
+    ROS2Job new_job_entry(goal_handle, goal->robot_id, goal->deadline_ms, goal->laser_scan, goal->initial_pose);
 
     // add new job to the scheduler;
     sched_.add_job(new_job_entry);
+
+    // update ipose to goal->ipose
+    offload_amcl_ipose = goal->initial_pose;
     
-    // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-    // std::thread{std::bind(&OffloadServer::offload_localization_execute, this, _1), goal_handle}.detach();
-    
-}
-
-void OffloadServer::offload_localization_execute(const std::shared_ptr<OffloadServer::GoalHandleOffloadLocalization> goal_handle)
-{
-    RCLCPP_INFO(this->get_logger(), "Executing goal");
-    rclcpp::Rate loop_rate(1);
-    const auto goal = goal_handle->get_goal();
-    auto feedback = std::make_shared<OffloadServer::OffloadLocalization::Feedback>();
-    auto result = std::make_shared<OffloadServer::OffloadLocalization::Result>();
-
-    for (int i = 1; rclcpp::ok(); ++i) {
-    // Check if there is a cancel request
-    if (goal_handle->is_canceling()) {
-        result->success = false;
-        goal_handle->canceled(result);
-        RCLCPP_INFO(this->get_logger(), "Goal canceled");
-        return;
-    }
-
-    
-    // Publish feedback
-    goal_handle->publish_feedback(feedback);
-    RCLCPP_INFO(this->get_logger(), "TODO: Publish feedback");
-
-    loop_rate.sleep();
-    }
-
-    // Check if goal is result
-    if (rclcpp::ok()) {
-    result->success = true;
-    goal_handle->succeed(result);
-    RCLCPP_INFO(this->get_logger(), "Goal succeeded");
-    }
 }
 
 #endif

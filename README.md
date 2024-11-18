@@ -18,13 +18,18 @@ cd turtlebot4_ws
 
 # TODOs
 ## offload_client
-- [ ] switch between offload and non-offload
+- [ ] [IN PROGRESS] switch between offload and non-offload
 
 ## offload_server
-- [ ] nav2 final_pose ready callback
-- [ ] global server flag RESULT_READY
-- [ ] busy wait in the scheduler.execute()
+- [ ] [TEST PENDING] nav2 final_pose ready callback
+- [ ] [TEST PENDING] global server flag RESULT_READY
+- [x] busy wait in the scheduler.execute()
 - [ ] time the scheduler execution
+- [ ] protect variables with mutexes
+- [ ] [IN PRORGRESS] manage lifecycle of Nav2
 
 ## turtlbot4
 - [ ] try to get internet on the turtlebot pi
+
+## evaluation
+- 

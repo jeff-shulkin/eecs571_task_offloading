@@ -84,8 +84,8 @@ private:
   void run();
 
   // Subscription callbacks
-  void amcl_pose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr amcl_pose_msg);
-  void local_costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr local_costmap_msg);
+  void nav2_amcl_fpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr nav2_amcl_fpose_msg);
+  void nav2_local_costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr nav2_local_costmap_msg);
 
   // Function callbacks
   void offload_localization_function_callback();
@@ -112,8 +112,6 @@ private:
       const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
 
   void handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
-
-  void offload_localization_execute(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
 
   // IP
   std::string get_ip();
@@ -149,6 +147,10 @@ private:
   // Nav2 Service for managing localization lifecycle
   rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_localization_manager_client_;
 
+  // Nav2 data ready flags
+  bool FPOSE_READY;
+  bool COSTMAP_READY;
+  
   // Store power saver mode
   bool power_saver_;
 
