@@ -14,13 +14,18 @@
 
 // ROS2 Libraries
 #include "rclcpp/rclcpp.hpp"
+#include "offload_server/offload_server.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
+
+
+namespace offload_server { class OffloadServer; }
 
 struct ROS2Job {
-	const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle;
+        const std::shared_ptr<rclcpp_action::ServerGoalHandle<task_action_interfaces::action::Offloadlocalization>> goal_handle;
         std::string agent_id;
         std::chrono::milliseconds deadline;
-	sensor_msgs::msg:LaserScan laserscan;
+	sensor_msgs::msg::LaserScan laserscan;
 	geometry_msgs::msg::PoseWithCovarianceStamped ipose;
 };
 
@@ -34,12 +39,15 @@ struct ROS2Job {
 class JobScheduler {
 
 	public:
+                JobScheduler(offload_server::OffloadServer *server);
 		void add_job(ROS2Job j);
 		void remove_task(ROS2Job j);
 		void execute();
 		void print_all_jobs();
 
 	private:
+                // hold reference to the offload server
+                offload_server::OffloadServer server_;
                 rclcpp::TimerBase::SharedPtr amcl_timer_;
                 rclcpp::TimerBase::SharedPtr costmap_timer_;
                 rclcpp::TimerBase::SharedPtr wifi_timer_;

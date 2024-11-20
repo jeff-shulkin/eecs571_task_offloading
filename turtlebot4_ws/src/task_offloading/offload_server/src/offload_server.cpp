@@ -17,6 +17,7 @@
  */
 
 #include "offload_server/offload_server.hpp"
+#include "offload_server/scheduler.hpp"
 #include "offload_server/utils.hpp"
 
 #include <rclcpp/rclcpp.hpp>
@@ -98,7 +99,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     rclcpp::SensorDataQoS(),
     std::bind(&OffloadServer::nav2_amcl_fpose_callback, this, std::placeholders::_1));
 
-  nav2_local_costmap_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+  nav2_local_costmap_map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
     "offload_server/local_costmap/local_costmap",
     rclcpp::SensorDataQoS(),
     std::bind(&OffloadServer::nav2_local_costmap_callback, this, std::placeholders::_1));
@@ -106,7 +107,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   // Nav2 flags
   FPOSE_READY = false;
   COSTMAP_READY = false;
-  
+
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
@@ -120,9 +121,14 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     "offload_server/scan",
   rclcpp::QoS(rclcpp::KeepLast(10)));
 
+  // Initialize job scheduler object
+  sched_ = JobScheduler(this);
+
   // Scheduler
-  std::thread(sched_.execute);
-  
+  std::thread scheduler(&JobScheduler::execute, &sched_);
+  // Allow scheduler to run independently
+  scheduler.detach();
+
 
   run();
 }
@@ -201,25 +207,33 @@ std::string OffloadServer::get_ip()
 }
 
 void OffloadServer::nav2_amcl_fpose_callback(std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped> nav2_amcl_fpose_msg) {
-    RCLCPP_INFO(this->get_logger(), "Battery callback triggered");
-    // Handle battery state
-    // Check frame id to make sure it came from offload server
-    if (nav2_amcl_fpose_msg->header.frame_id == "offload_server/map") {
-      RCLCPP_INFO(this->get_logger(), "received amcl pose from offload_server");
-      offload_amcl_rpose_ = *nav2_amcl_pose_msg;
-      FPOSE_READY = true;
-      offload_amcl_rpose_.header.frame_id = "map";
-    }
+    // Handle final pose
+    RCLCPP_INFO(this->get_logger(), "received amcl pose from offload_server");
+    offload_amcl_fpose_ = *nav2_amcl_fpose_msg;
+    FPOSE_READY = true;
 }
 
 void OffloadServer::nav2_local_costmap_callback(std::shared_ptr<nav_msgs::msg::OccupancyGrid> nav2_local_costmap_msg) {
-    RCLCPP_INFO(this->get_logger(), "offload local costmap callback triggered");
-    // Handle local costmap
-    // Check frame id to make sure it came from offload server
-    if (nav2_local_costmap_msg->header.frame_id == "offload_server/costmap") {
-      RCLCPP_INFO(this->get_logger(), "received costmap from offload_server");
-      offload_local_rcostmap_ = *nav2_local_costmap_msg;
-      offload_local_rcostmap_.header.frame_id = "map";
-    }
+    RCLCPP_INFO(this->get_logger(), "received costmap from offload_server");
+    offload_local_rcostmap_ = *nav2_local_costmap_msg;
 }
 
+rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr OffloadServer::get_nav2_ipose_pub_() {
+    return nav2_ipose_pub_;
+}
+
+rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr OffloadServer::get_nav2_laser_scan_pub_() {
+    return nav2_laser_scan_pub_;
+}
+
+bool OffloadServer::get_FPOSE_READY_flag() {
+    return FPOSE_READY;
+}
+
+void OffloadServer::set_FPOSE_READY_flag(bool value) {
+    FPOSE_READY = value;
+}
+
+geometry_msgs::msg::PoseWithCovarianceStamped OffloadServer::get_offload_amcl_fpose_() {
+    return offload_amcl_fpose_;
+}

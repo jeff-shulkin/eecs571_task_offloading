@@ -60,6 +60,10 @@
  * Power off
  */
 
+// Forward declaration: JobScheduler
+
+class JobScheduler;
+
 namespace offload_server
 {
 
@@ -79,6 +83,16 @@ public:
   // Constructor and Destructor
   explicit OffloadServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
   virtual ~OffloadServer() {}
+
+  // nav2 publisher and subscriber getters and setters
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr get_nav2_ipose_pub_();
+
+  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr get_nav2_laser_scan_pub_();
+
+  geometry_msgs::msg::PoseWithCovarianceStamped get_offload_amcl_fpose_();
+
+  bool get_FPOSE_READY_flag();
+  void set_FPOSE_READY_flag(bool value);
 
 private:
   void run();
@@ -141,8 +155,8 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_ipose_pub_;
 
   // Nav2 Subscribers for server-side data reception
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_amcl_rpose_sub_;
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr  local_costmap_map_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_amcl_fpose_sub_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr nav2_local_costmap_map_sub_;
 
   // Nav2 Service for managing localization lifecycle
   rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_localization_manager_client_;
@@ -150,9 +164,6 @@ private:
   // Nav2 data ready flags
   bool FPOSE_READY;
   bool COSTMAP_READY;
-  
-  // Store power saver mode
-  bool power_saver_;
 
   // Store latest LiDAR data sent from offload_agent
   sensor_msgs::msg::LaserScan latest_lidar_msg_;
@@ -161,7 +172,7 @@ private:
   geometry_msgs::msg::PoseWithCovarianceStamped offload_amcl_ipose_;
 
   // Store localization pose received from offload_server
-  geometry_msgs::msg::PoseWithCovarianceStamped offload_amcl_rpose_;
+  geometry_msgs::msg::PoseWithCovarianceStamped offload_amcl_fpose_;
 
   // Store costmap received from offload_server
   nav_msgs::msg::OccupancyGrid offload_local_rcostmap_;
