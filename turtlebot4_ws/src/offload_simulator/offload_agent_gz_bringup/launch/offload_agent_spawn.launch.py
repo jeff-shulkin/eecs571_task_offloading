@@ -30,6 +30,9 @@ from launch_ros.actions import Node, PushRosNamespace
 
 
 ARGUMENTS = [
+    DeclareLaunchArgument('agent', default_value='false',
+                          choices=['true', 'false'],
+                          description='Start offload agent'),
     DeclareLaunchArgument('server', default_value='false',
                           choices=['true', 'false'],
                           description='Start offload server'),
@@ -151,7 +154,9 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([robot_description_launch]),
             launch_arguments=[('model', LaunchConfiguration('model')),
-                              ('use_sim_time', LaunchConfiguration('use_sim_time'))]
+                              ('use_sim_time', LaunchConfiguration('use_sim_time'))
+            ],
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # Dock description
@@ -159,6 +164,7 @@ def generate_launch_description():
             PythonLaunchDescriptionSource([dock_description_launch]),
             # The robot starts docked
             launch_arguments={'gazebo': 'ignition'}.items(),
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # Spawn Offload Agent
@@ -171,7 +177,8 @@ def generate_launch_description():
                        '-z', z_robot,
                        '-Y', yaw,
                        '-topic', 'robot_description'],
-            output='screen'
+            output='screen',
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # Spawn Dock
@@ -185,6 +192,7 @@ def generate_launch_description():
                        '-Y', yaw_dock,
                        '-topic', 'standard_dock_description'],
             output='screen',
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # ROS IGN bridge
@@ -194,14 +202,17 @@ def generate_launch_description():
                 ('model', LaunchConfiguration('model')),
                 ('robot_name', robot_name),
                 ('dock_name', dock_name),
-                ('namespace', namespace)]
+                ('namespace', namespace)
+            ],
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # TurtleBot 4 nodes
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([offload_agent_node_launch]),
             launch_arguments=[('model', LaunchConfiguration('model')),
-                              ('param_file', offload_agent_node_yaml_file)]
+                              ('param_file', offload_agent_node_yaml_file)],
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # Create 3 nodes
@@ -209,7 +220,8 @@ def generate_launch_description():
             PythonLaunchDescriptionSource([create3_nodes_launch]),
             launch_arguments=[
                 ('namespace', namespace)
-            ]
+            ],
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # Create 3 Gazebo nodes
@@ -218,7 +230,8 @@ def generate_launch_description():
             launch_arguments=[
                 ('robot_name', robot_name),
                 ('dock_name', dock_name),
-            ]
+            ],
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # RPLIDAR static transforms
@@ -233,7 +246,8 @@ def generate_launch_description():
             remappings=[
                 ('/tf', 'tf'),
                 ('/tf_static', 'tf_static'),
-            ]
+            ],
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
         # OAKD static transform
@@ -252,7 +266,8 @@ def generate_launch_description():
             remappings=[
                 ('/tf', 'tf'),
                 ('/tf_static', 'tf_static'),
-            ]
+            ],
+            condition=IfCondition(LaunchConfiguration('agent'))
         ),
 
     ])
