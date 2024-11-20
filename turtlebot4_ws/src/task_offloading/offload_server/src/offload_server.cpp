@@ -121,7 +121,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   rclcpp::QoS(rclcpp::KeepLast(10)));
 
   // Scheduler
-  std::thread scheduler(&JobScheduler::execute, &sched_);
+  std::thread scheduler(std::bind(&OffloadServer::execute, this));
   scheduler.detach();
 
 
@@ -213,31 +213,8 @@ void OffloadServer::nav2_local_costmap_callback(std::shared_ptr<nav_msgs::msg::O
     offload_local_rcostmap_ = *nav2_local_costmap_msg;
 }
 
-rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr OffloadServer::get_nav2_ipose_pub_() {
-    return nav2_ipose_pub_;
-}
 
-rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr OffloadServer::get_nav2_laser_scan_pub_() {
-    return nav2_laser_scan_pub_;
-}
-
-bool OffloadServer::get_FPOSE_READY_flag() {
-    return FPOSE_READY;
-}
-
-void OffloadServer::set_FPOSE_READY_flag(bool value) {
-    FPOSE_READY = value;
-}
-
-geometry_msgs::msg::PoseWithCovarianceStamped OffloadServer::get_offload_amcl_fpose_() {
-    return offload_amcl_fpose_;
-}
-
-JobScheduler::JobScheduler(){
-        RCLCPP_INFO(server_->get_logger(), "Initializing Job Scheduler");
-}
-
-void JobScheduler::add_job(ROS2Job j) {
+void OffloadServer::add_job(ROS2Job j) {
 	fifo_sched_.push(j);
 }
 
@@ -245,16 +222,16 @@ void JobScheduler::add_job(ROS2Job j) {
 //	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [j](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
 //}
 
-void JobScheduler::execute() {
+void OffloadServer::execute() {
   if(!fifo_sched_.empty()) {
 	ROS2Job curr_job = fifo_sched_.front();
 	nav2_ipose_pub_->publish(curr_job.ipose);
 	nav2_laser_scan_pub_->publish(curr_job.laserscan);
-	while(!server_->get_FPOSE_READY_flag()) { continue; } // CAUTION: busy looping is bad
-	server_->set_FPOSE_READY_flag(false);
+	while(!FPOSE_READY) { continue; } // CAUTION: busy looping is bad
+	FPOSE_READY = false;
 	auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
 	result->success = true;
-	result->final_pose = server_->get_offload_amcl_fpose();
+	result->final_pose = offload_amcl_fpose_;
 	result->exec_time = 0.0f;
 	curr_job.goal_handle->succeed(result);
         fifo_sched_.pop();

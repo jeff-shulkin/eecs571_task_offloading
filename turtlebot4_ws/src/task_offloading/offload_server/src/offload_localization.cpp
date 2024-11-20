@@ -43,7 +43,7 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     ROS2Job new_job_entry = {goal_handle, goal->robot_id, std::chrono::milliseconds(goal->deadline_ms), goal->laser_scan, goal->initial_pose};
 
     // add new job to the scheduler;
-    sched_.add_job(new_job_entry);
+    add_job(new_job_entry);
 
     // update ipose to goal->ipose
     offload_amcl_ipose_ = goal->initial_pose;
