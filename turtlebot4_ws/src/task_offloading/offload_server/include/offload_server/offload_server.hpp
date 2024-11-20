@@ -77,20 +77,6 @@ struct ROS2Job {
 //     }
 // };
 
-class JobScheduler {
-
-	public:
-		void add_job(ROS2Job j);
-		void remove_task(ROS2Job j);
-		void execute();
-		void print_all_jobs();
-
-	private:
-		// All scheduler data structures
-		// std::priority_queue<ROS2Job, std::deque<ROS2Job>, ROS2JobCompare> fifo_sched_;
-		std::queue<ROS2Job> fifo_sched_;
-		
-};
 // Timer Periods
 static constexpr auto LIDAR_5HZ_TIMER_DEADLINE_MS = 200;
 static constexpr auto LIDAR_10HZ_TIMER_DEADLINE_MS = 100;
@@ -116,7 +102,11 @@ public:
   geometry_msgs::msg::PoseWithCovarianceStamped get_offload_amcl_fpose_();
 
   bool get_FPOSE_READY_flag();
-  void set_FPOSE_READY_flag(bool value);
+  void set_FPOSE_READY_flag(bool value);	
+  void add_job(ROS2Job j);
+  void remove_job(ROS2Job j);
+  void execute();
+  void print_all_jobs();
 
 private:
   void run();
@@ -204,8 +194,10 @@ private:
   // Store server scheduling algorithm
   ServerSchedulingAlgo algo_;
 
-  // Task Scheduler
-  JobScheduler sched_;
+  // All scheduler data structures
+  // std::priority_queue<ROS2Job, std::deque<ROS2Job>, ROS2JobCompare> fifo_sched_;
+  std::queue<ROS2Job> fifo_sched_;
+
 };
 
 }  // namespace offload_server
