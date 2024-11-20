@@ -30,6 +30,9 @@ from launch_ros.actions import Node, PushRosNamespace
 
 
 ARGUMENTS = [
+    DeclareLaunchArgument('server', default_value='false',
+                          choices=['true', 'false'],
+                          description='Start offload server'),
     DeclareLaunchArgument('rviz', default_value='false',
                           choices=['true', 'false'],
                           description='Start rviz.'),
@@ -80,6 +83,8 @@ def generate_launch_description():
         [pkg_turtlebot4_viz, 'launch', 'view_navigation.launch.py'])
     offload_agent_node_launch = PathJoinSubstitution(
         [pkg_offload_agent_gz_bringup, 'launch', 'offload_agent_nodes.launch.py'])
+    offload_server_node_launch = PathJoinSubstitution(
+        [pkg_offload_agent_gz_bringup, 'launch', 'offload_server_nodes.launch.py'])
     create3_nodes_launch = PathJoinSubstitution(
         [pkg_irobot_create_common_bringup, 'launch', 'create3_nodes.launch.py'])
     create3_gz_nodes_launch = PathJoinSubstitution(
@@ -123,6 +128,21 @@ def generate_launch_description():
     z_robot = OffsetParser(z, -0.0025)
     # Rotate dock towards robot
     yaw_dock = OffsetParser(yaw, 3.1416)
+
+    spawn_server_group_action = GroupAction([
+        PushRosNamespace("offload_server"),
+
+        # Offloading Server node
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([offload_server_node_launch]),
+            launch_arguments=[
+                ('namespace', "offload_server"),
+                ('algo', LaunchConfiguration('algo'))
+            ],
+            condition=IfCondition(LaunchConfiguration('server'))
+        )
+
+    ])
 
     spawn_robot_group_action = GroupAction([
         PushRosNamespace(namespace),
@@ -241,7 +261,7 @@ def generate_launch_description():
     localization = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([localization_launch]),
         launch_arguments=[
-            ('namespace', namespace),
+            ('namespace', 'offload_server'),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('localization'))
@@ -251,7 +271,7 @@ def generate_launch_description():
     slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([slam_launch]),
         launch_arguments=[
-            ('namespace', namespace),
+            ('namespace', 'offload_server'),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('slam'))
@@ -261,7 +281,7 @@ def generate_launch_description():
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([nav2_launch]),
         launch_arguments=[
-            ('namespace', namespace),
+            ('namespace', 'offload_server'),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('nav2'))
@@ -276,12 +296,56 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('rviz')),
     )
 
+    # Offloaded Localization
+    offload_localization = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([localization_launch]),
+        launch_arguments=[
+            ('namespace', namespace),
+            ('use_sim_time', use_sim_time)
+        ],
+        condition=IfCondition(LaunchConfiguration('server'))
+    )
+
+    # Offloaded SLAM
+    offload_slam = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([slam_launch]),
+        launch_arguments=[
+            ('namespace', namespace),
+            ('use_sim_time', use_sim_time)
+        ],
+        condition=IfCondition(LaunchConfiguration('server'))
+    )
+
+    # Nav2
+    offload_nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([nav2_launch]),
+        launch_arguments=[
+            ('namespace', 'offload_server'),
+            ('use_sim_time', use_sim_time)
+        ],
+        condition=IfCondition(LaunchConfiguration('server'))
+    )
+
+    # RViz
+    #rviz = IncludeLaunchDescription(
+    #    PythonLaunchDescriptionSource([rviz_launch]),
+    #    launch_arguments=[
+    #        ('namespace', namespace),
+    #        ('use_sim_time', use_sim_time)],
+    #    condition=IfCondition(LaunchConfiguration('rviz')),
+    #)
+
+
     # Define LaunchDescription variable
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(param_file_cmd)
     ld.add_action(spawn_robot_group_action)
+    ld.add_action(spawn_server_group_action)
     ld.add_action(localization)
     ld.add_action(slam)
     ld.add_action(nav2)
+    ld.add_action(offload_localization)
+    ld.add_action(offload_slam)
+    ld.add_action(offload_nav2)
     ld.add_action(rviz)
     return ld

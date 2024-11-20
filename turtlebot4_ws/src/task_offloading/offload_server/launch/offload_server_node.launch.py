@@ -18,6 +18,7 @@ def generate_launch_description():
     turtlebot4_node = Node(
         package='offload_server',
         name='offload_server_node',
+        namespace='offload_server'
         executable='offload_server_node',
         output='screen',
     )
