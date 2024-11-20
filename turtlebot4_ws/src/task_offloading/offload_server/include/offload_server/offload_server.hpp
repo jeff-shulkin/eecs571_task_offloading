@@ -52,7 +52,6 @@
 #include "irobot_create_msgs/srv/robot_power.hpp"
 
 #include "task_action_interfaces/action/offloadlocalization.hpp"
-#include "offload_server/scheduler.hpp"
 #include "offload_server/utils.hpp"
 
 /** Supported functions
@@ -60,18 +59,43 @@
  * Power off
  */
 
-// Forward declaration: JobScheduler
-
-class JobScheduler;
-
 namespace offload_server
 {
 
+struct ROS2Job {
+        const std::shared_ptr<rclcpp_action::ServerGoalHandle<task_action_interfaces::action::Offloadlocalization>> goal_handle;
+        std::string agent_id;
+        std::chrono::milliseconds deadline;
+	sensor_msgs::msg::LaserScan laserscan;
+	geometry_msgs::msg::PoseWithCovarianceStamped ipose;
+};
+
+// Custom priority queue job comparator
+// struct ROS2JobCompare {
+//     bool operator()(ROS2Job& a, ROS2Job& b){
+//             return a->callback. > b;
+//     }
+// };
+
+class JobScheduler {
+
+	public:
+		void add_job(ROS2Job j);
+		void remove_task(ROS2Job j);
+		void execute();
+		void print_all_jobs();
+
+	private:
+		// All scheduler data structures
+		// std::priority_queue<ROS2Job, std::deque<ROS2Job>, ROS2JobCompare> fifo_sched_;
+		std::queue<ROS2Job> fifo_sched_;
+		
+};
 // Timer Periods
-// TODO: DEFINE FURTHER TIMER DEADLINES
 static constexpr auto LIDAR_5HZ_TIMER_DEADLINE_MS = 200;
 static constexpr auto LIDAR_10HZ_TIMER_DEADLINE_MS = 100;
-static constexpr auto WIFI_TIMER_LATENCY_DEADLINE_MS = 70; // TODO: ALTER WIFI DEADLINE BASED ON EXPERIENCE/MAKE VARIABLE
+static constexpr auto WIFI_TIMER_LATENCY_DEADLINE_MS = 70; 
+
 class OffloadServer : public rclcpp::Node
 {
 

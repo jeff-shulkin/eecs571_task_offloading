@@ -43,7 +43,6 @@ add_library(${PROJECT_NAME}_lib
   "src/main.cpp"
   "src/offload_localization.cpp"
   "src/offload_server.cpp"
-  "src/scheduler.cpp"
 )
 
 

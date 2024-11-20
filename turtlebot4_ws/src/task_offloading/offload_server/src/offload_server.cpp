@@ -17,7 +17,6 @@
  */
 
 #include "offload_server/offload_server.hpp"
-#include "offload_server/scheduler.hpp"
 #include "offload_server/utils.hpp"
 
 #include <rclcpp/rclcpp.hpp>
@@ -121,12 +120,8 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     "offload_server/scan",
   rclcpp::QoS(rclcpp::KeepLast(10)));
 
-  // Initialize job scheduler object
-  sched_ = JobScheduler(this);
-
   // Scheduler
   std::thread scheduler(&JobScheduler::execute, &sched_);
-  // Allow scheduler to run independently
   scheduler.detach();
 
 
@@ -237,3 +232,32 @@ void OffloadServer::set_FPOSE_READY_flag(bool value) {
 geometry_msgs::msg::PoseWithCovarianceStamped OffloadServer::get_offload_amcl_fpose_() {
     return offload_amcl_fpose_;
 }
+
+JobScheduler::JobScheduler(){
+        RCLCPP_INFO(server_->get_logger(), "Initializing Job Scheduler");
+}
+
+void JobScheduler::add_job(ROS2Job j) {
+	fifo_sched_.push(j);
+}
+
+//void JobScheduler::remove_job(ROS2Job j) {
+//	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [j](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
+//}
+
+void JobScheduler::execute() {
+  if(!fifo_sched_.empty()) {
+	ROS2Job curr_job = fifo_sched_.front();
+	nav2_ipose_pub_->publish(curr_job.ipose);
+	nav2_laser_scan_pub_->publish(curr_job.laserscan);
+	while(!server_->get_FPOSE_READY_flag()) { continue; } // CAUTION: busy looping is bad
+	server_->set_FPOSE_READY_flag(false);
+	auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
+	result->success = true;
+	result->final_pose = server_->get_offload_amcl_fpose();
+	result->exec_time = 0.0f;
+	curr_job.goal_handle->succeed(result);
+        fifo_sched_.pop();
+  }
+}
+
