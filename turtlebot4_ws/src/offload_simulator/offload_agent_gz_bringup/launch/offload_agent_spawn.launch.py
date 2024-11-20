@@ -261,7 +261,7 @@ def generate_launch_description():
     localization = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([localization_launch]),
         launch_arguments=[
-            ('namespace', 'offload_server'),
+            ('namespace', namespace),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('localization'))
@@ -271,7 +271,7 @@ def generate_launch_description():
     slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([slam_launch]),
         launch_arguments=[
-            ('namespace', 'offload_server'),
+            ('namespace', namespace),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('slam'))
@@ -281,7 +281,7 @@ def generate_launch_description():
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([nav2_launch]),
         launch_arguments=[
-            ('namespace', 'offload_server'),
+            ('namespace', namespace),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('nav2'))
@@ -300,7 +300,7 @@ def generate_launch_description():
     offload_localization = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([localization_launch]),
         launch_arguments=[
-            ('namespace', namespace),
+            ('namespace', "offload_server"),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('server'))
@@ -310,7 +310,7 @@ def generate_launch_description():
     offload_slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([slam_launch]),
         launch_arguments=[
-            ('namespace', namespace),
+            ('namespace', "offload_server"),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('server'))
@@ -320,7 +320,7 @@ def generate_launch_description():
     offload_nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([nav2_launch]),
         launch_arguments=[
-            ('namespace', 'offload_server'),
+            ('namespace', "offload_server"),
             ('use_sim_time', use_sim_time)
         ],
         condition=IfCondition(LaunchConfiguration('server'))
