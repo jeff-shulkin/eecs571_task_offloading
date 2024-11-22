@@ -94,12 +94,12 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
 
   // Nav2 Subscriptions
   nav2_amcl_fpose_sub_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
-    "offload_server/amcl_pose",
+    "amcl_pose",
     rclcpp::SensorDataQoS(),
     std::bind(&OffloadServer::nav2_amcl_fpose_callback, this, std::placeholders::_1));
 
   nav2_local_costmap_map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-    "offload_server/local_costmap/local_costmap",
+    "local_costmap/local_costmap",
     rclcpp::SensorDataQoS(),
     std::bind(&OffloadServer::nav2_local_costmap_callback, this, std::placeholders::_1));
 
@@ -113,11 +113,11 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     rclcpp::QoS(rclcpp::KeepLast(10)));
 
   nav2_ipose_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
-    "offload_server/amcl_pose",
+    "initialpose",
    rclcpp::QoS(rclcpp::KeepLast(10)));
 
   nav2_laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>(
-    "offload_server/scan",
+    "scan",
   rclcpp::QoS(rclcpp::KeepLast(10)));
 
   // Scheduler
@@ -218,9 +218,9 @@ void OffloadServer::add_job(ROS2Job j) {
 	fifo_sched_.push(j);
 }
 
-//void JobScheduler::remove_job(ROS2Job j) {
-//	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [j](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
-//}
+// void JobScheduler::remove_job(ROS2Job j) {
+// 	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [j](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
+// }
 
 void OffloadServer::execute() {
   if(!fifo_sched_.empty()) {
