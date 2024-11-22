@@ -48,6 +48,18 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     // update ipose to goal->ipose
     offload_amcl_ipose_ = goal->initial_pose;
 
+    offload_status_ = goal->status;
+    uint8_t nav2_cmd;
+    if(!offload_status_) { 
+        // No Offload, stop server nav2
+        nav2_cmd = 10; // pause
+    } else {
+        nav2_cmd = 11; // resume
+    }
+    auto request = std::make_shared<nav2_msgs::srv::ManageLifecycleNodes::Request>();
+    request->command = nav2_cmd;
+    auto future = nav2_localization_manager_client_->async_send_request(request);
+
 }
 
 #endif

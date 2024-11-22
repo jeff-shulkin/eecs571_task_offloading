@@ -191,6 +191,8 @@ private:
   // Store costmap received from offload_server
   nav_msgs::msg::OccupancyGrid offload_local_rcostmap_;
 
+  bool offload_status_;
+
   // Store server scheduling algorithm
   ServerSchedulingAlgo algo_;
 

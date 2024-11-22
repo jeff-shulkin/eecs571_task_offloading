@@ -47,6 +47,12 @@ using Power = irobot_create_msgs::srv::RobotPower;
 using EmptySrv = std_srvs::srv::Empty;
 using TriggerSrv = std_srvs::srv::Trigger;
 
+
+constexpr uint8_t NAV2_PAUSE = 10;
+constexpr uint8_t NAV2_RESUME = 11;
+
+
+
 /**
  * @brief Turtlebot4 Node constructor
  */
@@ -571,7 +577,12 @@ void Turtlebot4::low_battery_animation()
 
 void Turtlebot4::offload_localization_function_callback()
 {
-  if (offload_localization_client_ != nullptr) {
+  if (offload_localization_client_ != nullptr && latency_ < 75) { //  && laser_ < 75 cost_func latency only 
+    if (!offload_status_) { // check prev offload_status
+      sendLifeCycleManager(NAV2_PAUSE); // pause_cmd = 10; resume_cmd = 11;
+    }
+    offload_status_ = true;
+
     RCLCPP_INFO(this->get_logger(), "Offload Localization");
     // Initialize Goal message
     auto goal_msg = std::make_shared<OffloadLocalization::Goal>();
@@ -595,7 +606,20 @@ void Turtlebot4::offload_localization_function_callback()
 
     offload_localization_client_->send_goal(goal_msg);
   } else {
-    RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
+    // Run locally
+    // RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
+    if(offload_status_){ // check prev offload_status
+      sendLifeCycleManager(NAV2_RESUME); // pause_cmd = 10; resume_cmd = 11;
+    }
+    offload_status_ = false;
+
+    // Signal server to stop
+    RCLCPP_INFO(this->get_logger(), "No Offload. Running Localization at agent.");
+    auto goal_msg = std::make_shared<OffloadLocalization::Goal>();
+    goal_msg->robot_id = robot_id_; // Grab robot id from launch parameters
+    goal_msg->status = offload_status_; // Grab whether we want to offload or not from status private variable
+    offload_localization_client_->send_goal(goal_msg);
+  
   }
 
 }
