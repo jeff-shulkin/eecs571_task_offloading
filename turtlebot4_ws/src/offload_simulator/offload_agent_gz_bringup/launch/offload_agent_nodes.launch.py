@@ -19,7 +19,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
-from launch.substitutions import EqualsSubstitution, LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import EqualsSubstitution, LaunchConfiguration, PathJoinSubstitution, TextSubstitution
 from launch_ros.actions import Node
 
 ARGUMENTS = [
@@ -33,7 +33,9 @@ ARGUMENTS = [
 
     DeclareLaunchArgument('robot_id', default_value='turtlebot4_default', description='Turtlebot4 Default ID'),
 
-    DeclareLaunchArgument('server_ip', default_value='127.0.0.1', description='Server IP Address')
+    DeclareLaunchArgument('server_ip', default_value='127.0.0.1', description='Server IP Address'),
+
+    DeclareLaunchArgument('namespace', default_value='', description='Robot namespace')
 ]
 
 
@@ -69,17 +71,15 @@ def generate_launch_description():
                     {'model': LaunchConfiguration('model')},
                     {'robot_id': LaunchConfiguration('robot_id')},
                     {'server_ip': LaunchConfiguration('server_ip')}],
+        remappings=[
+             ([TextSubstitution(text='/'), LaunchConfiguration('namespace'), TextSubstitution(text='/offload_localization/_action/feedback')], '/offload_localization/_action/feedback'),
+             ([TextSubstitution(text='/'), LaunchConfiguration('namespace'), TextSubstitution(text='/offload_localization/_action/status')], '/offload_localization/_action/status'),
+             ([TextSubstitution(text='/'), LaunchConfiguration('namespace'), TextSubstitution(text='/offload_localization/_action/cancel_goal')], '/offload_localization/_action/cancel_goal'),
+             ([TextSubstitution(text='/'), LaunchConfiguration('namespace'), TextSubstitution(text='/offload_localization/_action/get_result')], '/offload_localization/_action/get_result'),
+             ([TextSubstitution(text='/'), LaunchConfiguration('namespace'), TextSubstitution(text='/offload_localization/_action/send_goal')], '/offload_localization/_action/send_goal')
+        ],
         output='screen',
     )
-
-    #offload_server_node = Node(
-    #    package='offload_server',
-    #    name='offload_server',
-    #    executable='offload_server',
-    #    namespace='offload_server',
-    #    parameters=[{'algo': LaunchConfiguration('algo')}],
-    #    output='screen',
-    #x)
 
     # Turtlebot4 Gazebo Hmi node
     offload_agent_gz_hmi_node = Node(
@@ -94,7 +94,6 @@ def generate_launch_description():
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(server_param_file_cmd)
     ld.add_action(agent_param_file_cmd)
-   # ld.add_action(offload_server_node)
     ld.add_action(offload_agent_node)
     ld.add_action(offload_agent_gz_hmi_node)
     return ld

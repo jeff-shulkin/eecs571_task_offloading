@@ -43,6 +43,12 @@ def generate_launch_description():
         name='offload_server',
         executable='offload_server',
         parameters=[{'algo': LaunchConfiguration('algo')}],
+        remappings=[('/offload_server/offload_localization/_action/feedback', '/offload_localization/_action/feedback'),
+                    ('/offload_server/offload_localization/_action/status', '/offload_localization/_action/status'),
+                    ('/offload_server/offload_localization/_action/cancel_goal', '/offload_localization/_action/cancel_goal'),
+                    ('/offload_server/offload_localization/_action/get_result', '/offload_localization/_action/get_result'),
+                    ('/offload_server/offload_localization/_action/send_goal', '/offload_localization/_action/send_goal')
+                   ],
         output='screen',
     )
 
