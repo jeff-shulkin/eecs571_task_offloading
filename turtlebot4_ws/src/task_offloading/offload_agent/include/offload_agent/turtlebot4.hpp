@@ -212,10 +212,8 @@ private:
 
 
   // Actions
-  std::unique_ptr<Turtlebot4Action<OffloadLocalization>> offload_localization_client_;
+  rclcpp_action::Client<OffloadLocalization>::SharedPtr offload_localization_client_;
   // TODO :: ruiying
-  // std::unique_ptr<Turtlebot4Action<ComputePathToPose>> planner_client_;
-  // std::unique_ptr<Turtlebot4Action<FollowPath>> controller_client_;
   rclcpp_action::Client<ComputePathToPose>::SharedPtr planner_client_;
   rclcpp_action::Client<FollowPath>::SharedPtr controller_client_;
   rclcpp::Client<ManageLifecycleNodes>::SharedPtr lifeCycle_client_;
@@ -274,6 +272,9 @@ private:
 
   // Store whether or not we want to offload localization
   bool offload_status_;
+
+  // Store offload localization goal options
+  rclcpp_action::Client<OffloadLocalization>::SendGoalOptions offload_localization_send_goal_options_;
 
   // Store server IP
   std::string server_ip_;

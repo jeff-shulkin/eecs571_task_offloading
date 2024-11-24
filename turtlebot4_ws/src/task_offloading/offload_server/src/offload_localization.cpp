@@ -15,7 +15,6 @@ rclcpp_action::GoalResponse OffloadServer::handle_offload_localization_goal(
     RCLCPP_INFO(this->get_logger(), "Received goal request for robot %s", goal->robot_id.c_str());
     (void)uuid;
     if (goal->status == false) {
-    // TODO: CANCEL JOBS ON SCHEDULER FROM THIS ROBOT ID
     return rclcpp_action::GoalResponse::REJECT;
     }
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
@@ -31,7 +30,7 @@ rclcpp_action::CancelResponse OffloadServer::handle_offload_localization_cancel(
 
 void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle)
 {
-    using namespace std::placeholders;
+    RCLCPP_INFO(this->get_logger(), "Goal accepted, adding job to scheduler");
 
     // create a new job based on the received goal
     const auto goal = goal_handle->get_goal();

@@ -37,7 +37,7 @@
 
 using turtlebot4::Turtlebot4;
 using OffloadLocalization = task_action_interfaces::action::Offloadlocalization;
-using GoalHandleOffloadLocalization = rclcpp_action::ServerGoalHandle<OffloadLocalization>; // TODO :: ruiying
+using GoalHandleOffloadLocalization = rclcpp_action::ClientGoalHandle<OffloadLocalization>; // TODO :: ruiying
 using Dock = irobot_create_msgs::action::Dock;
 using Undock = irobot_create_msgs::action::Undock;
 using WallFollow = irobot_create_msgs::action::WallFollow;
@@ -190,7 +190,7 @@ Turtlebot4::Turtlebot4()
     rclcpp::QoS(rclcpp::KeepLast(10)));
 
   // Create action/service clients
-  offload_localization_client_ = std::make_unique<turtlebot4::Turtlebot4Action<OffloadLocalization>>(node_handle_, "offload_localization");
+  //offload_localization_client_ = std::make_unique<turtlebot4::Turtlebot4Action<OffloadLocalization>>(node_handle_, "offload_localization");
   dock_client_ = std::make_unique<Turtlebot4Action<Dock>>(node_handle_, "dock");
   undock_client_ = std::make_unique<Turtlebot4Action<Undock>>(node_handle_, "undock");
   wall_follow_client_ = std::make_unique<Turtlebot4Action<WallFollow>>(node_handle_, "wall_follow");
@@ -214,13 +214,18 @@ Turtlebot4::Turtlebot4()
 
   // TODO :: ruiying
   // bind the result and feedback callback functions from localization server
-  auto localization_send_goal_options = rclcpp_action::Client<OffloadLocalization>::SendGoalOptions();
-  localization_send_goal_options.goal_response_callback =
+  offload_localization_send_goal_options_ = rclcpp_action::Client<OffloadLocalization>::SendGoalOptions();
+  offload_localization_send_goal_options_.goal_response_callback =
     std::bind(&Turtlebot4::localization_goal_response_callback, this, std::placeholders::_1);
-  localization_send_goal_options.feedback_callback =
+  offload_localization_send_goal_options_.feedback_callback =
     std::bind(&Turtlebot4::localization_feedback_callback, this, std::placeholders::_1, std::placeholders::_2);
-  localization_send_goal_options.result_callback =
+  offload_localization_send_goal_options_.result_callback =
     std::bind(&Turtlebot4::localization_result_callback, this, std::placeholders::_1);
+
+  this->offload_localization_client_ = rclcpp_action::create_client<OffloadLocalization>(
+    this,
+    "offload_localization"
+  );
   // -----------------
 
 
@@ -230,7 +235,7 @@ Turtlebot4::Turtlebot4()
   planner_client_ = rclcpp_action::create_client<nav2_msgs::action::ComputePathToPose>(this, "compute_path_to_pose");
   controller_client_ = rclcpp_action::create_client<nav2_msgs::action::FollowPath>(this, "follow_path");
   lifeCycle_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("/lifecycle_manager_localization/manage_nodes"); // TODO :: lifeCycle Manager
-  
+
 
   function_callbacks_ = {
     {"Offload Localization", std::bind(&Turtlebot4::offload_localization_function_callback, this)},
@@ -574,13 +579,13 @@ void Turtlebot4::offload_localization_function_callback()
   if (offload_localization_client_ != nullptr) {
     RCLCPP_INFO(this->get_logger(), "Offload Localization");
     // Initialize Goal message
-    auto goal_msg = std::make_shared<OffloadLocalization::Goal>();
+    auto goal_msg = OffloadLocalization::Goal();
 
-    goal_msg->robot_id = robot_id_; // Grab robot id from launch parameters
-    goal_msg->status = offload_status_; // Grab whether we want to offload or not from status private variable
+    goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
+    goal_msg.status = offload_status_; // Grab whether we want to offload or not from status private variable
 
-    goal_msg->initial_pose.pose.pose = initial_pose_; // Grab stored initial pose from turtlebot4
-    goal_msg->initial_pose.pose.covariance = {
+    goal_msg.initial_pose.pose.pose = initial_pose_; // Grab stored initial pose from turtlebot4
+    goal_msg.initial_pose.pose.covariance = {
                                         1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                         0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
                                         0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
@@ -589,11 +594,13 @@ void Turtlebot4::offload_localization_function_callback()
                                         0.0, 0.0, 0.0, 0.0, 0.0, 1.0
                                        };
 
-    goal_msg->laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
+    goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
 
-    goal_msg->deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
+    goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
 
-    offload_localization_client_->send_goal(goal_msg);
+    offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
+
+    RCLCPP_INFO(this->get_logger(), "Client has successuflly sent goal to action server");
   } else {
     RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
   }

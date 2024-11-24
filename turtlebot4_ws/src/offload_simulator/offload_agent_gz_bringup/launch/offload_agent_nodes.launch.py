@@ -17,7 +17,7 @@
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, LogInfo
 from launch.conditions import IfCondition
 from launch.substitutions import EqualsSubstitution, LaunchConfiguration, PathJoinSubstitution, TextSubstitution
 from launch_ros.actions import Node
@@ -61,6 +61,8 @@ def generate_launch_description():
 
     offload_agent_node_yaml_file = LaunchConfiguration('agent_param_file')
     #offload_server_node_yaml_file = LaunchConfiguration('server_param_file')
+
+    LogInfo(msg=['remapped is: /', LaunchConfiguration('namespace'), '/offload_localization/_action/feedback'])
 
     # Turtlebot4 node
     offload_agent_node = Node(

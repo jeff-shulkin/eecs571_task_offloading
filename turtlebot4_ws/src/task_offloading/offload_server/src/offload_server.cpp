@@ -44,7 +44,7 @@ using offload_server::OffloadServer;
  * @brief OffloadServer Node constructor
  */
 OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
-: Node("offload_server_node", options)
+: Node("offload_server", options)
 {
   RCLCPP_INFO(get_logger(), "Init Offload Server Node");
 
@@ -78,14 +78,11 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
 
   // ROS Action Servers
   offload_localization_action_server_ = rclcpp_action::create_server<OffloadLocalization>(
-  this->get_node_base_interface(),
-  this->get_node_clock_interface(),
-  this->get_node_logging_interface(),
-  this->get_node_waitables_interface(),
+  node_handle_,
   "offload_localization",
-  std::bind(&offload_server::OffloadServer::handle_offload_localization_goal, this, std::placeholders::_1, std::placeholders::_2),
-  std::bind(&offload_server::OffloadServer::handle_offload_localization_cancel, this, std::placeholders::_1),
-  std::bind(&offload_server::OffloadServer::handle_offload_localization_accepted, this, std::placeholders::_1));
+  std::bind(&OffloadServer::handle_offload_localization_goal, this, std::placeholders::_1, std::placeholders::_2),
+  std::bind(&OffloadServer::handle_offload_localization_cancel, this, std::placeholders::_1),
+  std::bind(&OffloadServer::handle_offload_localization_accepted, this, std::placeholders::_1));
 
   RCLCPP_INFO(node_handle_->get_logger(), "offload_localization action server instantiated");
 
