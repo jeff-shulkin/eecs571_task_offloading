@@ -314,6 +314,7 @@ void Turtlebot4::latency_timer(const std::chrono::milliseconds timeout)
       auto endTime = std::chrono::high_resolution_clock::now();
       auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
       if (fp == nullptr) {
+        RCLCPP_INFO(this->get_logger(), "Offloading turned off");
         std::cerr << "Failed to run command. Offloading turned off." << std::endl;
         offload_status_ = false;
       }
@@ -337,7 +338,7 @@ void Turtlebot4::latency_timer(const std::chrono::milliseconds timeout)
         std::cout << "No connection to server" << std::endl;
         return;
       }
-
+      offload_status_ = true;
       RCLCPP_INFO(this->get_logger(), "Elapsed time for command: %ld", elapsed_time);
       RCLCPP_INFO(this->get_logger(), "Current Latency: %f", latency_);
     });
@@ -637,6 +638,7 @@ void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalizatio
   }
 
   // Handle the result_position here!
+  RCLCPP_INFO(this->get_logger(), "Result received back from offload_server");
   geometry_msgs::msg::PoseStamped start_pose;
   start_pose.pose = initial_pose_;
 

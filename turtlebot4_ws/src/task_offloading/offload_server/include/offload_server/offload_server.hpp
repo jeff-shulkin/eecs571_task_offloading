@@ -22,6 +22,7 @@
 #include <chrono>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -195,9 +196,10 @@ private:
   ServerSchedulingAlgo algo_;
 
   // All scheduler data structures
-  // std::priority_queue<ROS2Job, std::deque<ROS2Job>, ROS2JobCompare> fifo_sched_;
   std::queue<ROS2Job> fifo_sched_;
 
+  // Mutex for accessing fifo queue
+  std::mutex fifo_lock_;
 };
 
 }  // namespace offload_server

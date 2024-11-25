@@ -15,8 +15,10 @@ rclcpp_action::GoalResponse OffloadServer::handle_offload_localization_goal(
     RCLCPP_INFO(this->get_logger(), "Received goal request for robot %s", goal->robot_id.c_str());
     (void)uuid;
     if (goal->status == false) {
-    return rclcpp_action::GoalResponse::REJECT;
+      RCLCPP_INFO(this->get_logger(), "Goal rejected");
+      return rclcpp_action::GoalResponse::REJECT;
     }
+    RCLCPP_INFO(this->get_logger(), "Goal accepted");
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
 }
 

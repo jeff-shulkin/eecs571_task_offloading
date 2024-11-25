@@ -135,7 +135,7 @@ void OffloadServer::run()
   // Start scheduler with given scheduling algorithm
   //scheduler_.start();
 
-  wifi_timer(std::chrono::milliseconds(WIFI_TIMER_LATENCY_DEADLINE_MS));
+  //wifi_timer(std::chrono::milliseconds(WIFI_TIMER_LATENCY_DEADLINE_MS));
 }
 
 /**
@@ -212,26 +212,38 @@ void OffloadServer::nav2_local_costmap_callback(std::shared_ptr<nav_msgs::msg::O
 
 
 void OffloadServer::add_job(ROS2Job j) {
-	fifo_sched_.push(j);
+    RCLCPP_INFO(this->get_logger(), "adding job to fifo scheduler");
+    fifo_sched_.push(j);
 }
 
-// void JobScheduler::remove_job(ROS2Job j) {
-// 	fifo_sched_.erase(std::remove_if(fifo_sched_.begin(), fifo_sched_.end(), [j](ROS2Job job) {return job.agent_id == j.agent_id && job.task_id == j.task_id;}));
-// }
 
 void OffloadServer::execute() {
-  if(!fifo_sched_.empty()) {
-	ROS2Job curr_job = fifo_sched_.front();
-	nav2_ipose_pub_->publish(curr_job.ipose);
-	nav2_laser_scan_pub_->publish(curr_job.laserscan);
-	while(!FPOSE_READY) { continue; } // CAUTION: busy looping is bad
-	FPOSE_READY = false;
-	auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
-	result->success = true;
-	result->final_pose = offload_amcl_fpose_;
-	result->exec_time = 0.0f;
-	curr_job.goal_handle->succeed(result);
-        fifo_sched_.pop();
-  }
+    while(1) {
+      fifo_lock_.lock();
+      if (!fifo_sched_.empty()) {
+          ROS2Job curr_job = fifo_sched_.front();
+          RCLCPP_INFO(this->get_logger(), "publishing initial pose and LiDAR data to offload_server nav2 stack");
+
+	  nav2_ipose_pub_->publish(curr_job.ipose);
+	  nav2_laser_scan_pub_->publish(curr_job.laserscan);
+
+	  while(!FPOSE_READY) { continue; } // CAUTION: busy looping is bad
+          RCLCPP_INFO(this->get_logger(), "received amcl pose back from nav2 stack");
+	  FPOSE_READY = false;
+
+	  auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
+	  result->success = true;
+	  result->final_pose = offload_amcl_fpose_;
+	  result->exec_time = 0.0f;
+	  curr_job.goal_handle->succeed(result);
+
+          RCLCPP_INFO(this->get_logger(), "sent goal back to offload_agent");
+          fifo_sched_.pop();
+      }
+      else {
+          RCLCPP_INFO(this->get_logger(), "fifo queue empty");
+      }
+    fifo_lock_.unlock();
+    }
 }
 
