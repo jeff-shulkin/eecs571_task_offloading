@@ -213,7 +213,9 @@ void OffloadServer::nav2_local_costmap_callback(std::shared_ptr<nav_msgs::msg::O
 
 void OffloadServer::add_job(ROS2Job j) {
     RCLCPP_INFO(this->get_logger(), "adding job to fifo scheduler");
+    fifo_lock_.lock();
     fifo_sched_.push(j);
+    fifo_lock_.unlock();
 }
 
 
