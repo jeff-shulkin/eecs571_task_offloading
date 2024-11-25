@@ -629,7 +629,6 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.status = offload_status_; // Grab whether we want to offload or not from status private variable
     // TODO: we probably need to change goal options for sending stuff on local stack
     //offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
-  
   }
 
 }
