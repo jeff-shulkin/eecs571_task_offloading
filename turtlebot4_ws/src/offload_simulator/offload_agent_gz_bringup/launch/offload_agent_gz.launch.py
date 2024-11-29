@@ -19,6 +19,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.actions import IncludeLaunchDescription
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
@@ -38,6 +39,7 @@ ARGUMENTS = [
                           description='Offload Server Scheduling Algorithm'),
     DeclareLaunchArgument('robot_id', default_value='turtlebot4_default', description='Turtlebot4 id'),
     DeclareLaunchArgument('server_ip', default_value='127.0.0.1', description='Server IP Address'),
+    DeclareLaunchArgument('agent', default_value='false', description='robot agent')
 ]
 
 for pose_element in ['x', 'y', 'z', 'qx', 'qy', 'qz']:
@@ -60,7 +62,8 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([gazebo_launch]),
         launch_arguments=[
             ('world', LaunchConfiguration('world'))
-        ]
+        ],
+        condition=IfCondition(LaunchConfiguration('agent')),
     )
 
     robot_spawn = IncludeLaunchDescription(
