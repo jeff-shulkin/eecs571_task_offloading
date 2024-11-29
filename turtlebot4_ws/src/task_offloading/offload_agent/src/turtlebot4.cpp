@@ -17,7 +17,7 @@
  */
 
 #include "offload_agent/turtlebot4.hpp"
-
+#include "nav2_msgs/srv/manage_lifecycle_nodes.hpp"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -46,11 +46,6 @@ using EStop = irobot_create_msgs::srv::EStop;
 using Power = irobot_create_msgs::srv::RobotPower;
 using EmptySrv = std_srvs::srv::Empty;
 using TriggerSrv = std_srvs::srv::Trigger;
-
-
-constexpr uint8_t NAV2_PAUSE = 10;
-constexpr uint8_t NAV2_RESUME = 11;
-
 
 
 /**
@@ -218,7 +213,6 @@ Turtlebot4::Turtlebot4()
     node_handle_,
     "oakd/stop_camera");
 
-  // TODO :: ruiying
   // bind the result and feedback callback functions from localization server
   offload_localization_send_goal_options_ = rclcpp_action::Client<OffloadLocalization>::SendGoalOptions();
   offload_localization_send_goal_options_.goal_response_callback =
@@ -240,7 +234,7 @@ Turtlebot4::Turtlebot4()
   // controller_client_ = std::make_unique<turtlebot4::Turtlebot4Action<nav2_msgs::action::FollowPath>>(node_handle_, "follow_path");
   planner_client_ = rclcpp_action::create_client<nav2_msgs::action::ComputePathToPose>(this, "compute_path_to_pose");
   controller_client_ = rclcpp_action::create_client<nav2_msgs::action::FollowPath>(this, "follow_path");
-  lifeCycle_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("/lifecycle_manager_localization/manage_nodes"); // TODO :: lifeCycle Manager
+  lifeCycle_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("lifecycle_manager_localization/manage_nodes"); // TODO :: lifeCycle Manager
 
 
   function_callbacks_ = {
@@ -584,10 +578,10 @@ void Turtlebot4::low_battery_animation()
 void Turtlebot4::offload_localization_function_callback()
 {
   if (offload_localization_client_ != nullptr && latency_ < 75) { //  && laser_ < 75 cost_func latency only 
-    //if (!offload_status_) { // check prev offload_status
-    //  sendLifeCycleManager(NAV2_PAUSE); // pause_cmd = 10; resume_cmd = 11;
-    //}
-    //offload_status_ = true;
+    if (!offload_status_) { // check prev offload_status
+      sendLifeCycleManager(nav2_msgs::srv::ManageLifecycleNodes::Request::PAUSE); // pause_cmd = 10; resume_cmd = 11;
+    }
+    offload_status_ = true;
 
     RCLCPP_INFO(this->get_logger(), "Offload Localization");
     // Initialize Goal message
@@ -613,12 +607,12 @@ void Turtlebot4::offload_localization_function_callback()
     RCLCPP_INFO(this->get_logger(), "Goal Status: %d", offload_status_);
     offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
 
-    RCLCPP_INFO(this->get_logger(), "Client has successuflly sent goal to action server");
+    RCLCPP_INFO(this->get_logger(), "Client has successfully sent goal to action server");
   } else {
     // Run locally
     // RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
     if(offload_status_){ // check prev offload_status
-      sendLifeCycleManager(NAV2_RESUME); // pause_cmd = 10; resume_cmd = 11;
+      sendLifeCycleManager(nav2_msgs::srv::ManageLifecycleNodes::Request::RESUME); // pause_cmd = 10; resume_cmd = 11;
     }
     offload_status_ = false;
 
@@ -732,23 +726,29 @@ void Turtlebot4::followPathResultCallback(
 }
 
 void Turtlebot4::sendLifeCycleManager(uint8_t cmd) {
+  const std::chrono::nanoseconds timeout = std::chrono::nanoseconds(-1);
+  auto response_received_callback =
+    [this](rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedFutureWithRequest future) {
+      auto request_response_pair = future.get();
+      RCLCPP_INFO(this->get_logger(), "lifecycle manager service call result: %d", request_response_pair.second->success);
+  };
+
   auto request = std::make_shared<ManageLifecycleNodes::Request>();
   request->command = cmd;
-  
 
-  auto future = lifeCycle_client_->async_send_request(request);
-
+  RCLCPP_INFO(this->get_logger(), "sending command %d to lifecycle manager", cmd);
+  lifeCycle_client_->async_send_request(request, std::move(response_received_callback));
   // Wait for the result
-  try {
-      auto response = future.get();
-      if (response->success) {
-          RCLCPP_INFO(this->get_logger(), "Command executed successfully");
-      } else {
-          RCLCPP_ERROR(this->get_logger(), "Failed to execute command");
-      }
-  } catch (const std::exception &e) {
-      RCLCPP_ERROR(this->get_logger(), "Service call failed: %s", e.what());
-  }
+  //try {
+  //   auto response = ;
+  //   if (response->success) {
+  //        RCLCPP_INFO(this->get_logger(), "Command executed successfully");
+  //    } else {
+  //        RCLCPP_ERROR(this->get_logger(), "Failed to execute command");
+  //    }
+  //} catch (const std::exception &e) {
+  //    RCLCPP_ERROR(this->get_logger(), "Service call failed: %s", e.what());
+  //}
 }
 
 // ---------------------------------------

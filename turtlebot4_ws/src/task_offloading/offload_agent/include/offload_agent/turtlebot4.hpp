@@ -213,7 +213,6 @@ private:
 
   // Actions
   rclcpp_action::Client<OffloadLocalization>::SharedPtr offload_localization_client_;
-  // TODO :: ruiying
   rclcpp_action::Client<ComputePathToPose>::SharedPtr planner_client_;
   rclcpp_action::Client<FollowPath>::SharedPtr controller_client_;
   rclcpp::Client<ManageLifecycleNodes>::SharedPtr lifeCycle_client_;
