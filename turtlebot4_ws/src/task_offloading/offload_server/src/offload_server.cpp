@@ -104,6 +104,9 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   FPOSE_READY = false;
   COSTMAP_READY = false;
 
+  // Initialize status flags
+  running_ = true;
+
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
@@ -118,11 +121,13 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   rclcpp::QoS(rclcpp::KeepLast(10)));
 
   // Scheduler
-  std::thread scheduler(std::bind(&OffloadServer::execute, this));
-  scheduler.detach();
-
+  scheduler_ = std::thread(&OffloadServer::execute, this);
 
   run();
+}
+
+OffloadServer::~OffloadServer() {
+    stop();  // Ensure proper cleanup
 }
 
 /**
@@ -220,27 +225,40 @@ void OffloadServer::add_job(ROS2Job j) {
 
 
 void OffloadServer::execute() {
-    while(1) {
+    while(running_.load()) {
       fifo_lock_.lock();
       if (!fifo_sched_.empty()) {
           ROS2Job curr_job = fifo_sched_.front();
+
           RCLCPP_INFO(this->get_logger(), "publishing initial pose and LiDAR data to offload_server nav2 stack");
 
-	  nav2_ipose_pub_->publish(curr_job.ipose);
-	  nav2_laser_scan_pub_->publish(curr_job.laserscan);
+          auto start_time = std::chrono::high_resolution_clock::now();
+          nav2_ipose_pub_->publish(curr_job.ipose);
+          nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
-	  while(!FPOSE_READY) { continue; } // CAUTION: busy looping is bad
+          while(!FPOSE_READY && running_.load()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          } // CAUTION: busy looping is bad
+
+          auto end_time = std::chrono::high_resolution_clock::now();
+          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+
+          if (!running_.load()) {
+            break;
+          }
+
           RCLCPP_INFO(this->get_logger(), "received amcl pose back from nav2 stack");
-	  FPOSE_READY = false;
+          FPOSE_READY = false;
 
-	  auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
-	  result->success = true;
-	  result->final_pose = offload_amcl_fpose_;
-	  result->exec_time = 0.0f;
-	  curr_job.goal_handle->succeed(result);
+          auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
+          result->success = true;
+          result->final_pose = offload_amcl_fpose_;
+          result->exec_time = static_cast<float>(duration.count()) / 1000000.0f;; // in seconds
+
+          curr_job.goal_handle->succeed(result);
 
           RCLCPP_INFO(this->get_logger(), "sent goal back to offload_agent");
-          fifo_sched_.pop();
+        fifo_sched_.pop();
       }
       else {
           RCLCPP_INFO(this->get_logger(), "fifo queue empty");
@@ -249,3 +267,11 @@ void OffloadServer::execute() {
     }
 }
 
+void OffloadServer::stop() {
+    RCLCPP_INFO(this->get_logger(), "Stopping OffloadServer...");
+    running_.store(false);  // Signal the thread to exit
+    if (scheduler_.joinable()) {
+        scheduler_.join();  // Wait for the thread to finish
+    }
+    RCLCPP_INFO(this->get_logger(), "OffloadServer stopped.");
+}

@@ -25,6 +25,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <atomic>
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
@@ -93,7 +94,7 @@ public:
 
   // Constructor and Destructor
   explicit OffloadServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
-  virtual ~OffloadServer() {}
+  virtual ~OffloadServer();
 
   // nav2 publisher and subscriber getters and setters
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr get_nav2_ipose_pub_();
@@ -107,6 +108,7 @@ public:
   void add_job(ROS2Job j);
   void remove_job(ROS2Job j);
   void execute();
+  void stop();
   void print_all_jobs();
 
 private:
@@ -199,6 +201,8 @@ private:
 
   // All scheduler data structures
   std::queue<ROS2Job> fifo_sched_;
+  std::thread scheduler_;
+  std::atomic<bool> running_;
 
   // Mutex for accessing fifo queue
   std::mutex fifo_lock_;

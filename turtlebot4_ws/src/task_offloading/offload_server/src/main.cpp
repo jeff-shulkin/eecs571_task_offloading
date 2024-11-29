@@ -21,24 +21,40 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <csignal>
 
 #include <rclcpp/rclcpp.hpp>
 
 #include "offload_server/offload_server.hpp"
 #include "offload_server/utils.hpp"
 
+std::shared_ptr<offload_server::OffloadServer> server;
+
+void signalHandler(int signal) {
+    if (signal == SIGINT || signal == SIGTERM) {
+        RCLCPP_INFO(rclcpp::get_logger("offload_server"), "Signal received, shutting down...");
+        if (server) {
+            server->stop();
+        }
+        rclcpp::shutdown();
+    }
+}
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
 
+  std::signal(SIGINT, signalHandler);
+  std::signal(SIGTERM, signalHandler);
+
+  server = std::make_shared<offload_server::OffloadServer>();
   rclcpp::executors::SingleThreadedExecutor executor;
-
-  auto server = std::make_shared<offload_server::OffloadServer>();
-
   executor.add_node(server);
+
+  RCLCPP_INFO(rclcpp::get_logger("offload_server"), "Starting OffloadServer...");
   executor.spin();
 
+  RCLCPP_INFO(rclcpp::get_logger("offload_server"), "Shutting down OffloadServer...");
   rclcpp::shutdown();
 
   return 0;
