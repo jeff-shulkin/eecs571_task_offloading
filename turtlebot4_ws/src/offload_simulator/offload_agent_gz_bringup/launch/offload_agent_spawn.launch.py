@@ -355,7 +355,7 @@ def generate_launch_description():
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(param_file_cmd)
     ld.add_action(spawn_robot_group_action)
-    ld.add_action(spawn_server_group_action)
+    #ld.add_action(spawn_server_group_action)
     ld.add_action(localization)
     ld.add_action(slam)
     ld.add_action(nav2)
@@ -363,4 +363,5 @@ def generate_launch_description():
     ld.add_action(offload_slam)
     ld.add_action(offload_nav2)
     ld.add_action(rviz)
+    ld.add_action(spawn_server_group_action)
     return ld

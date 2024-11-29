@@ -113,7 +113,7 @@ private:
   void joy_callback(
     const sensor_msgs::msg::Joy::SharedPtr joy_msg);
   void lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg);
-
+  void initialpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr initialpose_msg);
   // Function callbacks
   void offload_localization_function_callback();
 
@@ -243,6 +243,7 @@ private:
 
   // Subscribers
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initialpose_sub_;
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
   rclcpp::Subscription<irobot_create_msgs::msg::DockStatus>::SharedPtr dock_status_sub_;
   rclcpp::Subscription<irobot_create_msgs::msg::WheelStatus>::SharedPtr wheel_status_sub_;
@@ -283,6 +284,12 @@ private:
 
   // Store current CPU load
   double cpu_load = 0.0;
+
+  // Store initial pose received from RViz
+  geometry_msgs::msg::PoseWithCovarianceStamped rviz_initial_pose_;
+
+  // Store flag for checking if rviz pose has been received
+  bool RVIZ_RECEIVED_ = false;
 
   // Turtlebot4 Model
   Turtlebot4Model model_;

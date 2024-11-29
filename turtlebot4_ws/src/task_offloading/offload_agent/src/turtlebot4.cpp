@@ -181,6 +181,11 @@ Turtlebot4::Turtlebot4()
     rclcpp::SensorDataQoS(),
     std::bind(&Turtlebot4::lidar_callback, this, std::placeholders::_1));
 
+  initialpose_sub_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "initialpose",
+    rclcpp::SensorDataQoS(),
+    std::bind(&Turtlebot4::initialpose_callback, this, std::placeholders::_1));
+
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
@@ -469,6 +474,13 @@ void Turtlebot4::lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lid
   latest_lidar_msg_ = *lidar_msg;
 }
 
+void Turtlebot4::initialpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr initialpose_msg)
+{
+  RCLCPP_INFO(this->get_logger(), "Grabbing initial pose from RViz");
+  rviz_initial_pose_ = *initialpose_msg;
+  RVIZ_RECEIVED_ = true;
+}
+
 /**
  * @brief Battery subscription callback
  * @input battery_state_msg - Received message on battery topic
@@ -577,7 +589,11 @@ void Turtlebot4::low_battery_animation()
 
 void Turtlebot4::offload_localization_function_callback()
 {
-  if (offload_localization_client_ != nullptr && latency_ < 75) { //  && laser_ < 75 cost_func latency only 
+  if (offload_localization_client_ != nullptr && latency_ < 75) { //  && laser_ < 75 cost_func latency only
+    if (!RVIZ_RECEIVED_) {
+      RCLCPP_INFO(this->get_logger(), "Cannot offload: no initial pose has been received from Rviz");
+      return;
+    }
     if (!offload_status_) { // check prev offload_status
       sendLifeCycleManager(nav2_msgs::srv::ManageLifecycleNodes::Request::PAUSE); // pause_cmd = 10; resume_cmd = 11;
     }
@@ -590,15 +606,16 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
     goal_msg.status = offload_status_; // Grab whether we want to offload or not from status private variable
 
-    goal_msg.initial_pose.pose.pose = initial_pose_; // Grab stored initial pose from turtlebot4
-    goal_msg.initial_pose.pose.covariance = {
-                                        1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                        0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-                                        0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-                                        0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-                                        0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-                                        0.0, 0.0, 0.0, 0.0, 0.0, 1.0
-                                       };
+    //goal_msg.initial_pose.pose.pose = initial_pose_; // Grab stored initial pose from turtlebot4
+    //goal_msg.initial_pose.pose.covariance = {
+    //                                    1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    //                                    0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
+    //                                    0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+    //                                    0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+    //                                    0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+    //                                    0.0, 0.0, 0.0, 0.0, 0.0, 1.0
+    //                                   };
+    goal_msg.initial_pose = rviz_initial_pose_;
 
     goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
 
@@ -627,7 +644,6 @@ void Turtlebot4::offload_localization_function_callback()
 
 }
 
-// TODO :: ruiying
 void Turtlebot4::localization_goal_response_callback(GoalHandleOffloadLocalization::SharedPtr goal_handle){
   if (!goal_handle) {
     RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
@@ -658,6 +674,7 @@ void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalizatio
 
   // Handle the result_position here!
   RCLCPP_INFO(this->get_logger(), "Result received back from offload_server");
+  RCLCPP_INFO(this->get_logger(), "Server execution time: %f", result.result->exec_time);
   geometry_msgs::msg::PoseStamped start_pose;
   start_pose.pose = initial_pose_;
 

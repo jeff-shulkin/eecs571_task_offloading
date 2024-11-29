@@ -44,7 +44,7 @@ using offload_server::OffloadServer;
  * @brief OffloadServer Node constructor
  */
 OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
-: Node("offload_server", options)
+: Node("offload_server", rclcpp::NodeOptions().use_intra_process_comms(true))
 {
   RCLCPP_INFO(get_logger(), "Init Offload Server Node");
 
@@ -122,6 +122,8 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
 
   // Scheduler
   scheduler_ = std::thread(&OffloadServer::execute, this);
+
+  scheduler_.detach();
 
   run();
 }
@@ -237,13 +239,16 @@ void OffloadServer::execute() {
           nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
           while(!FPOSE_READY && running_.load()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            auto curr = std::chrono::high_resolution_clock::now();
+            auto curr_duration = std::chrono::duration_cast<std::chrono::microseconds>(curr - start_time).count();
+            if (curr_duration >= 2000000) { break;}
           } // CAUTION: busy looping is bad
 
           auto end_time = std::chrono::high_resolution_clock::now();
           auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
           if (!running_.load()) {
+            RCLCPP_INFO(this->get_logger(), "RUNNING LOAD FALSE, BREAK");
             break;
           }
 
@@ -258,10 +263,10 @@ void OffloadServer::execute() {
           curr_job.goal_handle->succeed(result);
 
           RCLCPP_INFO(this->get_logger(), "sent goal back to offload_agent");
-        fifo_sched_.pop();
+          fifo_sched_.pop();
       }
       else {
-          RCLCPP_INFO(this->get_logger(), "fifo queue empty");
+          RCLCPP_DEBUG(this->get_logger(), "fifo queue empty");
       }
     fifo_lock_.unlock();
     }
