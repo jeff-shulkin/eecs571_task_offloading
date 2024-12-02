@@ -185,6 +185,11 @@ Turtlebot4::Turtlebot4()
     "initialpose",
     rclcpp::SensorDataQoS(),
     std::bind(&Turtlebot4::initialpose_callback, this, std::placeholders::_1));
+  
+  goal_pose_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
+    "clicked_point",
+    rclcpp::SensorDataQoS(),
+    std::bind(&Turtlebot4::goalpose_callback, this, std::placeholders::_1));
 
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
@@ -481,6 +486,18 @@ void Turtlebot4::initialpose_callback(const geometry_msgs::msg::PoseWithCovarian
   RVIZ_RECEIVED_ = true;
 }
 
+void Turtlebot4::goalpose_callback(const geometry_msgs::msg::PointStamped::SharedPtr goalpose_msg)
+{
+  RCLCPP_INFO(this->get_logger(), "Grabbing goal pose from RViz");
+
+  goal_pose.header = goalpose_msg->header;
+  goal_pose.pose.position = goalpose_msg->point;
+
+  if (!isPoseEqual(start_pose, goal_pose)){
+    sendComputePathToPose(start_pose, goal_pose);
+  }
+}
+
 /**
  * @brief Battery subscription callback
  * @input battery_state_msg - Received message on battery topic
@@ -675,19 +692,25 @@ void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalizatio
   // Handle the result_position here!
   RCLCPP_INFO(this->get_logger(), "Result received back from offload_server");
   RCLCPP_INFO(this->get_logger(), "Server execution time: %f", result.result->exec_time);
-  geometry_msgs::msg::PoseStamped start_pose;
-  start_pose.pose = initial_pose_;
 
-  geometry_msgs::msg::PoseStamped goal_pose;
-  goal_pose.header = result.result->final_pose.header;
-  goal_pose.pose = result.result->final_pose.pose.pose;
+  // Store start_pose received from server to local 
+  start_pose.header = result.result->final_pose.header;
+  start_pose.pose = result.result->final_pose.pose.pose;
 
-  sendComputePathToPose(start_pose, goal_pose); // start and end
-  //sendComputePathToPose(initial_pose_, result.result->final_pose);
+  if (isPoseEqual(start_pose, goal_pose))
+  {
+    if(goal_pose.pose.position.x != 0 || goal_pose.pose.position.y != 0)
+      RCLCPP_INFO(this->get_logger(), "Goal Reached!");
+    
+  } else {
+    // if not equal, navigate to goal
+    sendComputePathToPose(start_pose, goal_pose);
+  }
 }
 
 void Turtlebot4::sendComputePathToPose(const geometry_msgs::msg::PoseStamped &start, const geometry_msgs::msg::PoseStamped &goal) {
   // Create the goal message
+  RCLCPP_INFO(this->get_logger(), "Send start: [%f, %f]  goal: [%f, %f] to nav2 planner_server", start_pose.pose.position.x, start_pose.pose.position.y, goal_pose.pose.position.x, goal_pose.pose.position.y);
   auto goal_msg = nav2_msgs::action::ComputePathToPose::Goal();
   goal_msg.start = start;
   goal_msg.goal = goal;
@@ -766,6 +789,19 @@ void Turtlebot4::sendLifeCycleManager(uint8_t cmd) {
   //} catch (const std::exception &e) {
   //    RCLCPP_ERROR(this->get_logger(), "Service call failed: %s", e.what());
   //}
+}
+
+
+bool Turtlebot4::isPoseEqual(const geometry_msgs::msg::PoseStamped &first, const geometry_msgs::msg::PoseStamped &second) {
+  // Compare the position (x, y, z)
+  double position_diff = std::sqrt(
+      std::pow(first.pose.position.x - second.pose.position.x, 2) +
+      std::pow(first.pose.position.y - second.pose.position.y, 2) +
+      std::pow(first.pose.position.z - second.pose.position.z, 2)
+  );
+
+  // Check if the position difference and orientation difference are within the given tolerance
+  return position_diff < 0.05;
 }
 
 // ---------------------------------------

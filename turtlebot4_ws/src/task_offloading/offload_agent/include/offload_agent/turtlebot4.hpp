@@ -54,6 +54,8 @@
 #include "task_action_interfaces/action/offloadlocalization.hpp"
 
 #include <nav2_msgs/srv/manage_lifecycle_nodes.hpp>
+#include "geometry_msgs/msg/point_stamped.hpp"
+
 
 
 /** Supported functions
@@ -114,6 +116,7 @@ private:
     const sensor_msgs::msg::Joy::SharedPtr joy_msg);
   void lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg);
   void initialpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr initialpose_msg);
+  void goalpose_callback(const geometry_msgs::msg::PointStamped::SharedPtr goalpose_msg);
   // Function callbacks
   void offload_localization_function_callback();
 
@@ -134,6 +137,8 @@ private:
 
   // nav2 lifeCycle Manager
   void sendLifeCycleManager(uint8_t cmd);
+
+  bool isPoseEqual(const geometry_msgs::msg::PoseStamped &first, const geometry_msgs::msg::PoseStamped &second);
 
 
   // -------------------------
@@ -248,6 +253,9 @@ private:
   rclcpp::Subscription<irobot_create_msgs::msg::DockStatus>::SharedPtr dock_status_sub_;
   rclcpp::Subscription<irobot_create_msgs::msg::WheelStatus>::SharedPtr wheel_status_sub_;
 
+  // goal pose subscribers to rviz: /clicked_point
+  rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr goal_pose_sub_;
+
   // Publishers
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
@@ -290,6 +298,9 @@ private:
 
   // Store flag for checking if rviz pose has been received
   bool RVIZ_RECEIVED_ = false;
+
+  geometry_msgs::msg::PoseStamped start_pose;
+  geometry_msgs::msg::PoseStamped goal_pose;
 
   // Turtlebot4 Model
   Turtlebot4Model model_;
