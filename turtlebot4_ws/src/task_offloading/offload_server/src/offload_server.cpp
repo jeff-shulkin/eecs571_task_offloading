@@ -264,15 +264,15 @@ void OffloadServer::execute() {
           RCLCPP_INFO(this->get_logger(), "publishing initial pose and LiDAR data to offload_server nav2 stack");
 
           auto start_time = std::chrono::high_resolution_clock::now();
-          tf_broadcaster_->sendTransform(curr_job.map_to_odom_transform);
+          //tf_broadcaster_->sendTransform(curr_job.map_to_odom_transform);
           nav2_ipose_pub_->publish(curr_job.ipose);
           nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
-          // while(!FPOSE_READY && running_.load()) {
+          while(!FPOSE_READY && running_.load()) {
           //   auto curr = std::chrono::high_resolution_clock::now();
           //   auto curr_duration = std::chrono::duration_cast<std::chrono::microseconds>(curr - start_time).count();
           //   if (curr_duration >= 2000000) { break;}
-          // } // CAUTION: busy looping is bad
+          } // CAUTION: busy looping is bad
 
           auto end_time = std::chrono::high_resolution_clock::now();
           auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);

@@ -647,6 +647,7 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.initial_pose = rviz_initial_pose_;
 
     goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
+    goal_msg.laser_scan.header.frame_id = "offload_server/offload_server/rplidar_link/rplidar";
 
     goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
 

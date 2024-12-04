@@ -43,7 +43,7 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     RCLCPP_INFO(this->get_logger(), "Server Received goal: [%f, %f]", offload_amcl_ipose_.pose.pose.position.x, offload_amcl_ipose_.pose.pose.position.y);
     RCLCPP_INFO(this->get_logger(), "Server received frame id: %s", goal->laser_scan.header.frame_id.c_str());
 
-    goal->laser_scan.header.frame_id = "offload_server/offload_server/rplidar_link/rplidar";
+    //goal->laser_scan.header.frame_id = std::string("offload_server/offload_server/rplidar_link/rplidar");
     RCLCPP_INFO(this->get_logger(), "New frame id: %s", goal->laser_scan.header.frame_id.c_str());
 
     // create new job entry based on the goal
