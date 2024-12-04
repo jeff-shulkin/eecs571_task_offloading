@@ -20,6 +20,8 @@ find_package(rcutils REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(irobot_create_msgs REQUIRED)
 find_package(bondcpp REQUIRED)
 
@@ -53,6 +55,8 @@ set(DEPENDENCIES
   "std_msgs"
   "std_srvs"
   "sensor_msgs"
+  "geometry_msgs"
+  "tf2_ros"
   "irobot_create_msgs"
   "bondcpp"
   "nav_msgs"

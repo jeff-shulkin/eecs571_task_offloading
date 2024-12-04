@@ -32,6 +32,7 @@
 #include <rclcpp_components/register_node_macro.hpp>
 #include <bondcpp/bond.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav2_msgs/msg/particle_cloud.hpp>
 #include <nav2_msgs/srv/manage_lifecycle_nodes.hpp>
@@ -42,6 +43,9 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <nav2_util/service_client.hpp>
 
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include "irobot_create_msgs/msg/wheel_status.hpp"
 #include "irobot_create_msgs/msg/lightring_leds.hpp"
@@ -117,6 +121,8 @@ private:
   // Subscription callbacks
   void nav2_amcl_fpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr nav2_amcl_fpose_msg);
   void nav2_local_costmap_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr nav2_local_costmap_msg);
+  void nav2_amcl_transform_callback(const geometry_msgs::msg::TransformStamped::SharedPtr nav2_amcl_transform_msg);
+  void nav2_static_transform_callback(const geometry_msgs::msg::TransformStamped::SharedPtr nav2_static_transform_msg);
 
   // Function callbacks
   void offload_localization_function_callback();
@@ -143,6 +149,9 @@ private:
       const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
 
   void handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
+
+  // Function for querying transforms
+  void query_localization_transforms();
 
   // IP
   std::string get_ip();
@@ -174,6 +183,8 @@ private:
   // Nav2 Subscribers for server-side data reception
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_amcl_fpose_sub_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr nav2_local_costmap_map_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr nav2_amcl_transforms_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr nav2_static_transforms_sub_;
 
   // Nav2 Service for managing localization lifecycle
   rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_localization_manager_client_;
@@ -181,6 +192,7 @@ private:
   // Nav2 data ready flags
   bool FPOSE_READY;
   bool COSTMAP_READY;
+  bool TRANSFORMS_READY;
 
   // Store latest LiDAR data sent from offload_agent
   sensor_msgs::msg::LaserScan latest_lidar_msg_;
@@ -193,6 +205,16 @@ private:
 
   // Store costmap received from offload_server
   nav_msgs::msg::OccupancyGrid offload_local_rcostmap_;
+
+  // Store the Nav2 transforms
+  geometry_msgs::msg::TransformStamped offload_map_to_odom_transform_;
+  geometry_msgs::msg::TransformStamped offload_odom_to_base_transform_;
+  geometry_msgs::msg::TransformStamped offload_base_to_laser_transform_;
+
+  // Nav2 TF2 transform listener
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
   bool offload_status_;
 

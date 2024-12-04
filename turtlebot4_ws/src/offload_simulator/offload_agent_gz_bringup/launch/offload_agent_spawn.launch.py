@@ -321,16 +321,6 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('server'))
     )
 
-    # Offloaded SLAM
-    offload_slam = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([slam_launch]),
-        launch_arguments=[
-            ('namespace', "offload_server"),
-            ('use_sim_time', use_sim_time)
-        ],
-        condition=IfCondition(LaunchConfiguration('server'))
-    )
-
     # Nav2
     offload_nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([nav2_launch]),
@@ -341,26 +331,14 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('server'))
     )
 
-    # RViz
-    #rviz = IncludeLaunchDescription(
-    #    PythonLaunchDescriptionSource([rviz_launch]),
-    #    launch_arguments=[
-    #        ('namespace', namespace),
-    #        ('use_sim_time', use_sim_time)],
-    #    condition=IfCondition(LaunchConfiguration('rviz')),
-    #)
-
-
     # Define LaunchDescription variable
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(param_file_cmd)
     ld.add_action(spawn_robot_group_action)
-    #ld.add_action(spawn_server_group_action)
     ld.add_action(localization)
     ld.add_action(slam)
     ld.add_action(nav2)
     ld.add_action(offload_localization)
-    ld.add_action(offload_slam)
     ld.add_action(offload_nav2)
     ld.add_action(rviz)
     ld.add_action(spawn_server_group_action)

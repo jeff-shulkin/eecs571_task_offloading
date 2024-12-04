@@ -103,6 +103,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   // Nav2 flags
   FPOSE_READY = false;
   COSTMAP_READY = false;
+  TRANSFORMS_READY = false;
 
   // Initialize status flags
   running_ = true;
@@ -119,6 +120,11 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   nav2_laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>(
     "scan",
   rclcpp::QoS(rclcpp::KeepLast(10)));
+
+  // Transform buffer and listener
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
   // Scheduler
   scheduler_ = std::thread(&OffloadServer::execute, this);
@@ -219,6 +225,28 @@ void OffloadServer::nav2_local_costmap_callback(std::shared_ptr<nav_msgs::msg::O
 }
 
 
+void OffloadServer::query_localization_transforms() {
+    RCLCPP_INFO(this->get_logger(), "querying amcl transforms");
+    try {
+      RCLCPP_INFO(this->get_logger(), "querying map->odom transform");
+      offload_map_to_odom_transform_ = tf_buffer_->lookupTransform("map", "odom", tf2::TimePointZero);
+
+      RCLCPP_INFO(this->get_logger(), "querying odom->base_link transform");
+      offload_odom_to_base_transform_ = tf_buffer_->lookupTransform("odom", "base_link", tf2::TimePointZero);
+
+      RCLCPP_INFO(this->get_logger(), "querying base_link->laser transform");
+      offload_base_to_laser_transform_ = tf_buffer_->lookupTransform("base_link", "laser", tf2::TimePointZero);
+
+      TRANSFORMS_READY = true;
+    }
+
+    catch (const tf2::TransformException &ex) {
+      RCLCPP_INFO(this->get_logger(), "One of the transforms are not available");
+      TRANSFORMS_READY = false;
+      return;
+    }
+}
+
 void OffloadServer::add_job(ROS2Job j) {
     RCLCPP_INFO(this->get_logger(), "adding job to fifo scheduler");
     fifo_lock_.lock();
@@ -236,6 +264,7 @@ void OffloadServer::execute() {
           RCLCPP_INFO(this->get_logger(), "publishing initial pose and LiDAR data to offload_server nav2 stack");
 
           auto start_time = std::chrono::high_resolution_clock::now();
+          tf_broadcaster_->sendTransform(curr_job.map_to_odom_transform);
           nav2_ipose_pub_->publish(curr_job.ipose);
           nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
@@ -261,6 +290,15 @@ void OffloadServer::execute() {
           result->final_pose = offload_amcl_fpose_;
           result->exec_time = static_cast<float>(duration.count()) / 1000000.0f;; // in seconds
 
+          // query the transform buffer for amcl's transforms
+          query_localization_transforms();
+          if (!TRANSFORMS_READY) {
+            result->final_map_to_odom = offload_map_to_odom_transform_;
+            result->final_odom_to_base = offload_odom_to_base_transform_;
+            result->final_base_to_laser = offload_base_to_laser_transform_;
+          }
+
+          // send result back to agent
           curr_job.goal_handle->succeed(result);
 
           RCLCPP_INFO(this->get_logger(), "sent goal back to offload_agent");

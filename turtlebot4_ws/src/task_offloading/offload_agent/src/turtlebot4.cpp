@@ -185,7 +185,7 @@ Turtlebot4::Turtlebot4()
     "initialpose",
     rclcpp::SensorDataQoS(),
     std::bind(&Turtlebot4::initialpose_callback, this, std::placeholders::_1));
-  
+
   goal_pose_sub_ = this->create_subscription<geometry_msgs::msg::PointStamped>(
     "clicked_point",
     rclcpp::SensorDataQoS(),
@@ -481,6 +481,7 @@ void Turtlebot4::power_off_timer(const std::chrono::milliseconds timeout)
 void Turtlebot4::lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg)
 {
   RCLCPP_INFO(this->get_logger(), "Grabbing latest lidar data");
+  RCLCPP_INFO(this->get_logger(), "LiDAR frame id: %s", lidar_msg->header.frame_id.c_str());
   latest_lidar_msg_ = *lidar_msg;
 }
 
@@ -622,10 +623,10 @@ void Turtlebot4::offload_localization_function_callback()
       RCLCPP_INFO(this->get_logger(), "Cannot offload: no initial pose has been received from Rviz");
       return;
     }
-    if (!offload_status_) { // check prev offload_status
+    if (offload_status_) { // check prev offload_status
       sendLifeCycleManager(nav2_msgs::srv::ManageLifecycleNodes::Request::PAUSE); // pause_cmd = 10; resume_cmd = 11;
     }
-    offload_status_ = true;
+    //offload_status_ = true;
 
     RCLCPP_INFO(this->get_logger(), "Offload Localization");
     // Initialize Goal message

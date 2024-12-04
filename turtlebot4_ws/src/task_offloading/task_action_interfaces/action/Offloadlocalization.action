@@ -7,7 +7,10 @@ int32 deadline_ms # deadline in milliseconds. Can be 100 ms/200 ms (10 Hz vs 5 H
 ---
 # Result Definition
 bool success
-geometry_msgs/PoseWithCovarianceStamped final_pose # Final pose for the robot to navigate to
+geometry_msgs/PoseWithCovarianceStamped final_pose # Final pose calculated by AMCL
+geometry_msgs/TransformStamped final_map_to_odom # map->odom transform
+geometry_msgs/TransformStamped final_odom_to_base # odom->base_link transform
+geometry_msgs/TransformStamped final_base_to_laser # base_link->laser transform
 float32 exec_time
 ---
 # Feedback Definition

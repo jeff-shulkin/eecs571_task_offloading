@@ -41,7 +41,10 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     offload_amcl_ipose_ = goal->initial_pose;
 
     RCLCPP_INFO(this->get_logger(), "Server Received goal: [%f, %f]", offload_amcl_ipose_.pose.pose.position.x, offload_amcl_ipose_.pose.pose.position.y);
+    RCLCPP_INFO(this->get_logger(), "Server received frame id: %s", goal->laser_scan.header.frame_id.c_str());
 
+    goal->laser_scan.header.frame_id = "offload_server/offload_server/rplidar_link/rplidar";
+    RCLCPP_INFO(this->get_logger(), "New frame id: %s", goal->laser_scan.header.frame_id.c_str());
 
     // create new job entry based on the goal
     ROS2Job new_job_entry = {goal_handle, goal->robot_id, std::chrono::milliseconds(goal->deadline_ms), goal->laser_scan, goal->initial_pose};
@@ -54,7 +57,7 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
 
     offload_status_ = goal->status;
     uint8_t nav2_cmd;
-    if(!offload_status_) { 
+    if(!offload_status_) {
         // No Offload, stop server nav2
         nav2_cmd = 10; // pause
     } else {
