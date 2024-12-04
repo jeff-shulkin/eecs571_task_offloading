@@ -55,6 +55,8 @@
 
 #include <nav2_msgs/srv/manage_lifecycle_nodes.hpp>
 #include "geometry_msgs/msg/point_stamped.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+
 
 
 
@@ -117,6 +119,8 @@ private:
   void lidar_callback(const sensor_msgs::msg::LaserScan::SharedPtr lidar_msg);
   void initialpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr initialpose_msg);
   void goalpose_callback(const geometry_msgs::msg::PointStamped::SharedPtr goalpose_msg);
+  void odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg);
+
   // Function callbacks
   void offload_localization_function_callback();
 
@@ -255,6 +259,7 @@ private:
 
   // goal pose subscribers to rviz: /clicked_point
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr goal_pose_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
 
   // Publishers
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;

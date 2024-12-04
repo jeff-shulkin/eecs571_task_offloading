@@ -191,6 +191,11 @@ Turtlebot4::Turtlebot4()
     rclcpp::SensorDataQoS(),
     std::bind(&Turtlebot4::goalpose_callback, this, std::placeholders::_1));
 
+  odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "odom",
+    rclcpp::SensorDataQoS(),
+    std::bind(&Turtlebot4::odom_callback, this, std::placeholders::_1));
+
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
@@ -498,6 +503,12 @@ void Turtlebot4::goalpose_callback(const geometry_msgs::msg::PointStamped::Share
   }
 }
 
+void Turtlebot4::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg) {
+  RCLCPP_INFO(this->get_logger(), "Grabbing odom data");
+  rviz_initial_pose_.pose = odom_msg->pose;
+
+}
+
 /**
  * @brief Battery subscription callback
  * @input battery_state_msg - Received message on battery topic
@@ -641,7 +652,7 @@ void Turtlebot4::offload_localization_function_callback()
     RCLCPP_INFO(this->get_logger(), "Goal Status: %d", offload_status_);
     offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
 
-    RCLCPP_INFO(this->get_logger(), "Client has successfully sent goal to action server");
+    RCLCPP_INFO(this->get_logger(), "Client has successfully sent goal[%f, %f] to action server", goal_msg.initial_pose.pose.pose.position.x, goal_msg.initial_pose.pose.pose.position.y);
   } else {
     // Run locally
     // RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
@@ -690,7 +701,7 @@ void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalizatio
   }
 
   // Handle the result_position here!
-  RCLCPP_INFO(this->get_logger(), "Result received back from offload_server");
+  RCLCPP_INFO(this->get_logger(), "Result:[%f, %f] received back from offload_server", result.result->final_pose.pose.pose.position.x, result.result->final_pose.pose.pose.position.y);
   RCLCPP_INFO(this->get_logger(), "Server execution time: %f", result.result->exec_time);
 
   // Store start_pose received from server to local 

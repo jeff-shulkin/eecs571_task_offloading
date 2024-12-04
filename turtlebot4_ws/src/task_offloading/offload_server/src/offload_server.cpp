@@ -210,6 +210,7 @@ void OffloadServer::nav2_amcl_fpose_callback(std::shared_ptr<geometry_msgs::msg:
     RCLCPP_INFO(this->get_logger(), "received amcl pose from offload_server");
     offload_amcl_fpose_ = *nav2_amcl_fpose_msg;
     FPOSE_READY = true;
+    RCLCPP_INFO(this->get_logger(), "AMCL returned fpose: [%f, %f]", offload_amcl_fpose_.pose.pose.position.x, offload_amcl_fpose_.pose.pose.position.y);
 }
 
 void OffloadServer::nav2_local_costmap_callback(std::shared_ptr<nav_msgs::msg::OccupancyGrid> nav2_local_costmap_msg) {
@@ -238,11 +239,11 @@ void OffloadServer::execute() {
           nav2_ipose_pub_->publish(curr_job.ipose);
           nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
-          while(!FPOSE_READY && running_.load()) {
-            auto curr = std::chrono::high_resolution_clock::now();
-            auto curr_duration = std::chrono::duration_cast<std::chrono::microseconds>(curr - start_time).count();
-            if (curr_duration >= 2000000) { break;}
-          } // CAUTION: busy looping is bad
+          // while(!FPOSE_READY && running_.load()) {
+          //   auto curr = std::chrono::high_resolution_clock::now();
+          //   auto curr_duration = std::chrono::duration_cast<std::chrono::microseconds>(curr - start_time).count();
+          //   if (curr_duration >= 2000000) { break;}
+          // } // CAUTION: busy looping is bad
 
           auto end_time = std::chrono::high_resolution_clock::now();
           auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);

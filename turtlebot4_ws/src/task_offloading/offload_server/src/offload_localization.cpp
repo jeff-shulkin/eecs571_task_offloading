@@ -40,6 +40,9 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     // update the ipose member variable to the latest data
     offload_amcl_ipose_ = goal->initial_pose;
 
+    RCLCPP_INFO(this->get_logger(), "Server Received goal: [%f, %f]", offload_amcl_ipose_.pose.pose.position.x, offload_amcl_ipose_.pose.pose.position.y);
+
+
     // create new job entry based on the goal
     ROS2Job new_job_entry = {goal_handle, goal->robot_id, std::chrono::milliseconds(goal->deadline_ms), goal->laser_scan, goal->initial_pose};
 
