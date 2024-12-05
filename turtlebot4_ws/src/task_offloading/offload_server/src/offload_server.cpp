@@ -111,20 +111,26 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   running_ = true;
 
   // Publishers
+  rclcpp::QoS pub_qos_settings = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_default));
+  pub_qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
+
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
-    rclcpp::QoS(rclcpp::KeepLast(10)));
+  rclcpp::QoS(rclcpp::KeepLast(10)));
 
   nav2_ipose_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "initialpose",
-   rclcpp::QoS(rclcpp::KeepLast(10)));
+  //rclcpp::QoS(rclcpp::KeepLast(10)));
+  pub_qos_settings);
 
   nav2_laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>(
     "scan",
-  rclcpp::QoS(rclcpp::KeepLast(10)));
+  //rclcpp::QoS(rclcpp::KeepLast(10)));
+  pub_qos_settings);
 
   // Service clients
   nav2_initial_pose_client_ = this->create_client<nav2_msgs::srv::SetInitialPose>("/amcl/set_initial_pose");
+
   // Transform buffer and listener
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -308,7 +314,7 @@ void OffloadServer::execute_worker(ROS2Job curr_job) {
     nav2_ipose_pub_->publish(curr_job.ipose);
     nav2_laser_scan_pub_->publish(curr_job.laserscan);
     auto start_time = std::chrono::high_resolution_clock::now();
-    //while(!FPOSE_READY && running_.load()) {} // CAUTION: busy looping is bad
+    while(!FPOSE_READY && running_.load()) {} // CAUTION: busy looping is bad
 
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
