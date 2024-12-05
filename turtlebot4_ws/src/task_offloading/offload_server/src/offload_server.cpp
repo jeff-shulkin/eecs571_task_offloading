@@ -285,6 +285,10 @@ void OffloadServer::execute() {
     while(running_.load()) {
       fifo_lock_.lock();
       if (!fifo_sched_.empty()) {
+          if (!running_.load()) {
+            RCLCPP_INFO(this->get_logger(), "RUNNING LOAD FALSE, BREAK");
+            break;
+          }
           ROS2Job curr_job = fifo_sched_.front();
           fifo_sched_.pop();
           RCLCPP_INFO(this->get_logger(), "spawned a execute worker");
@@ -308,11 +312,6 @@ void OffloadServer::execute_worker(ROS2Job curr_job) {
 
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-
-    if (!running_.load()) {
-      RCLCPP_INFO(this->get_logger(), "RUNNING LOAD FALSE, BREAK");
-      break;
-    }
 
     RCLCPP_INFO(this->get_logger(), "received amcl pose back from nav2 stack");
     FPOSE_READY = false;
