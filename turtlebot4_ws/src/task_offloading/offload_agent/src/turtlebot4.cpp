@@ -205,6 +205,10 @@ Turtlebot4::Turtlebot4()
     "function_calls",
     rclcpp::QoS(rclcpp::KeepLast(10)));
 
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+  tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
   // Create action/service clients
   //offload_localization_client_ = std::make_unique<turtlebot4::Turtlebot4Action<OffloadLocalization>>(node_handle_, "offload_localization");
   dock_client_ = std::make_unique<Turtlebot4Action<Dock>>(node_handle_, "dock");
@@ -635,19 +639,10 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
     goal_msg.status = offload_status_; // Grab whether we want to offload or not from status private variable
 
-    //goal_msg.initial_pose.pose.pose = initial_pose_; // Grab stored initial pose from turtlebot4
-    //goal_msg.initial_pose.pose.covariance = {
-    //                                    1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    //                                    0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-    //                                    0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-    //                                    0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-    //                                    0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-    //                                    0.0, 0.0, 0.0, 0.0, 0.0, 1.0
-    //                                   };
     goal_msg.initial_pose = rviz_initial_pose_;
 
     goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
-    goal_msg.laser_scan.header.frame_id = "offload_server/offload_server/rplidar_link/rplidar";
+    goal_msg.laser_scan.header.frame_id = "offload_server/offload_agent/rplidar_link/rplidar";
 
     goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
 

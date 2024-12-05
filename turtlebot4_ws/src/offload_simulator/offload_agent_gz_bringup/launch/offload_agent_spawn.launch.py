@@ -98,6 +98,8 @@ def generate_launch_description():
         [pkg_irobot_create_common_bringup, 'launch', 'dock_description.launch.py'])
     localization_launch = PathJoinSubstitution(
         [pkg_turtlebot4_navigation, 'launch', 'localization.launch.py'])
+    offload_localization_launch = PathJoinSubstitution(
+        [pkg_offload_agent_gz_bringup, 'launch', 'offload_localization.launch.py'])
     slam_launch = PathJoinSubstitution(
         [pkg_turtlebot4_navigation, 'launch', 'slam.launch.py'])
     nav2_launch = PathJoinSubstitution(
@@ -277,7 +279,8 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([localization_launch]),
         launch_arguments=[
             ('namespace', namespace),
-            ('use_sim_time', use_sim_time)
+            ('use_sim_time', use_sim_time),
+            ('log_level', 'debug')
         ],
         condition=IfCondition(LaunchConfiguration('localization'))
     )
@@ -316,7 +319,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([localization_launch]),
         launch_arguments=[
             ('namespace', "offload_server"),
-            ('use_sim_time', use_sim_time)
+            ('use_sim_time', use_sim_time),
         ],
         condition=IfCondition(LaunchConfiguration('server'))
     )

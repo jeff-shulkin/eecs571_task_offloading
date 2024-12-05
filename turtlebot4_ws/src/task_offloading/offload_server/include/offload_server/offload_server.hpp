@@ -36,11 +36,13 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav2_msgs/msg/particle_cloud.hpp>
 #include <nav2_msgs/srv/manage_lifecycle_nodes.hpp>
+#include <nav2_msgs/srv/set_initial_pose.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <std_srvs/srv/trigger.hpp>
+#include <lifecycle_msgs/srv/get_state.hpp>
 #include <nav2_util/service_client.hpp>
 
 #include <tf2_ros/buffer.h>
@@ -150,8 +152,14 @@ private:
 
   void handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle);
 
+  // Function for querying localization node statuses
+  bool query_localization_node_status();
+
   // Function for querying transforms
   void query_localization_transforms();
+
+  // Function for sending over intial pose to AMCL
+  void send_initial_pose(geometry_msgs::msg::PoseWithCovarianceStamped& ipose);
 
   // IP
   std::string get_ip();
@@ -185,6 +193,12 @@ private:
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr nav2_local_costmap_map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr nav2_amcl_transforms_sub_;
   rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr nav2_static_transforms_sub_;
+
+  // Nav2 Service for sending initial pose to amcl
+  rclcpp::Client<nav2_msgs::srv::SetInitialPose>::SharedPtr nav2_initial_pose_client_;
+
+  // Nav2 Service for querying localization lifecycle status
+  rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr nav2_localization_status_client_;
 
   // Nav2 Service for managing localization lifecycle
   rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_localization_manager_client_;

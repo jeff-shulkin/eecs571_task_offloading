@@ -86,7 +86,9 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
 
   RCLCPP_INFO(node_handle_->get_logger(), "offload_localization action server instantiated");
 
-  // Nav2 manager client service
+  // Nav2 node status client service
+  nav2_localization_status_client_ = this->create_client<lifecycle_msgs::srv::GetState>("/amcl/get_state");
+  // Nav2 node management client service
   nav2_localization_manager_client_ = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>("/lifecycle_manager_localization/manage_nodes");
 
   // Nav2 Subscriptions
@@ -121,6 +123,8 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     "scan",
   rclcpp::QoS(rclcpp::KeepLast(10)));
 
+  // Service clients
+  nav2_initial_pose_client_ = this->create_client<nav2_msgs::srv::SetInitialPose>("/amcl/set_initial_pose");
   // Transform buffer and listener
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -224,7 +228,29 @@ void OffloadServer::nav2_local_costmap_callback(std::shared_ptr<nav_msgs::msg::O
     offload_local_rcostmap_ = *nav2_local_costmap_msg;
 }
 
+bool OffloadServer::query_localization_node_status() {
+    auto response_received_callback =
+      [this](rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedFutureWithRequest future) {
+        auto request_response_pair = future.get();
+        if (request_response_pair.second->current_state.id == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
+          RCLCPP_INFO(this->get_logger(), "/offload_server/amcl active");
+          return true;
+        }
+        else {
+          RCLCPP_INFO(this->get_logger(), "/offload_server/amcl inactive");
+          return false;
+        }
+    };
 
+    RCLCPP_INFO(this->get_logger(), "querying amcl node status");
+    if (!nav2_localization_status_client_->wait_for_service(std::chrono::seconds(5))) {
+      RCLCPP_ERROR(this->get_logger(), "Service '/amcl/get_state' not available for node: amcl");
+      return false;
+    }
+
+    auto get_state_request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
+    nav2_localization_status_client_->async_send_request(get_state_request, response_received_callback);
+}
 void OffloadServer::query_localization_transforms() {
     RCLCPP_INFO(this->get_logger(), "querying amcl transforms");
     try {
@@ -256,59 +282,60 @@ void OffloadServer::add_job(ROS2Job j) {
 
 
 void OffloadServer::execute() {
-    while(running_.load()) {
-      fifo_lock_.lock();
-      if (!fifo_sched_.empty()) {
-          ROS2Job curr_job = fifo_sched_.front();
+    static int count = 0;
+    while (running_.load()) {
+      //if (query_localization_node_status()) {
+        fifo_lock_.lock();
+        if (!fifo_sched_.empty()) {
+            ROS2Job curr_job = fifo_sched_.front();
 
-          RCLCPP_INFO(this->get_logger(), "publishing initial pose and LiDAR data to offload_server nav2 stack");
+            RCLCPP_INFO(this->get_logger(), "publishing initial pose and LiDAR data to offload_server nav2 stack");
 
-          auto start_time = std::chrono::high_resolution_clock::now();
-          //tf_broadcaster_->sendTransform(curr_job.map_to_odom_transform);
-          nav2_ipose_pub_->publish(curr_job.ipose);
-          nav2_laser_scan_pub_->publish(curr_job.laserscan);
+            auto start_time = std::chrono::high_resolution_clock::now();
+            curr_job.laserscan.header.stamp = this->get_clock()->now();
 
-          while(!FPOSE_READY && running_.load()) {
-          //   auto curr = std::chrono::high_resolution_clock::now();
-          //   auto curr_duration = std::chrono::duration_cast<std::chrono::microseconds>(curr - start_time).count();
-          //   if (curr_duration >= 2000000) { break;}
-          } // CAUTION: busy looping is bad
+            nav2_ipose_pub_->publish(curr_job.ipose);
+            nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
-          auto end_time = std::chrono::high_resolution_clock::now();
-          auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+            while (!FPOSE_READY && running_.load()) { if (count == 0) { count++; break;} } // CAUTION: busy looping is bad
 
-          if (!running_.load()) {
-            RCLCPP_INFO(this->get_logger(), "RUNNING LOAD FALSE, BREAK");
-            break;
-          }
+            auto end_time = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
-          RCLCPP_INFO(this->get_logger(), "received amcl pose back from nav2 stack");
-          FPOSE_READY = false;
+            if (!running_.load()) {
+              RCLCPP_INFO(this->get_logger(), "RUNNING LOAD FALSE, BREAK");
+              break;
+            }
 
-          auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
-          result->success = true;
-          result->final_pose = offload_amcl_fpose_;
-          result->exec_time = static_cast<float>(duration.count()) / 1000000.0f;; // in seconds
+            //RCLCPP_INFO(this->get_logger(), "received amcl pose back from nav2 stack");
+            FPOSE_READY = false;
 
-          // query the transform buffer for amcl's transforms
-          query_localization_transforms();
-          if (!TRANSFORMS_READY) {
-            result->final_map_to_odom = offload_map_to_odom_transform_;
-            result->final_odom_to_base = offload_odom_to_base_transform_;
-            result->final_base_to_laser = offload_base_to_laser_transform_;
-          }
+            auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
+            result->success = true;
+            result->final_pose = offload_amcl_fpose_;
+            result->exec_time = static_cast<float>(duration.count()) / 1000000.0f;; // in seconds
 
-          // send result back to agent
-          curr_job.goal_handle->succeed(result);
+            // query the transform buffer for amcl's transforms
+            query_localization_transforms();
+            if (TRANSFORMS_READY) {
+              result->final_map_to_odom = offload_map_to_odom_transform_;
+              result->final_odom_to_base = offload_odom_to_base_transform_;
+              result->final_base_to_laser = offload_base_to_laser_transform_;
+            }
+            TRANSFORMS_READY = true;
 
-          RCLCPP_INFO(this->get_logger(), "sent goal back to offload_agent");
-          fifo_sched_.pop();
-      }
-      else {
-          RCLCPP_DEBUG(this->get_logger(), "fifo queue empty");
-      }
-    fifo_lock_.unlock();
-    }
+            // send result back to agent
+            curr_job.goal_handle->succeed(result);
+
+            RCLCPP_INFO(this->get_logger(), "sent goal back to offload_agent");
+            fifo_sched_.pop();
+        }
+        else {
+            RCLCPP_DEBUG(this->get_logger(), "fifo queue empty");
+        }
+      fifo_lock_.unlock();
+    //}
+  }
 }
 
 void OffloadServer::stop() {

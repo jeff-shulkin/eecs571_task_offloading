@@ -16,6 +16,7 @@
   <depend>std_srvs</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>lifecycle_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>irobot_create_msgs</depend>
   <depend>bondcpp</depend>

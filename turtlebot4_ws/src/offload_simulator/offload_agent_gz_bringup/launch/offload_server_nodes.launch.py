@@ -15,6 +15,7 @@
 # @author Roni Kreinin (rkreinin@clearpathrobotics.com)
 from time import sleep
 from ament_index_python.packages import get_package_share_directory
+from irobot_create_common_bringup.namespace import GetNamespacedName
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -35,7 +36,7 @@ def generate_launch_description():
     pkg_offload_server_gz_bringup = get_package_share_directory('offload_agent_gz_bringup')
 
     # Parameters
-    #offload_server_node_yaml_file = LaunchConfiguration('server_param_file')
+    robot_name = GetNamespacedName('offload_server', 'offload_agent')
 
     # Offload Server Node
     offload_server_node = Node(
@@ -52,8 +53,54 @@ def generate_launch_description():
         output='screen',
     )
 
+    static_map_odom_transform_node = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_map_odom_tf_publisher',
+            arguments=['0.0', '0.0', '0.0', '0', '0', '0', 'map', 'odom'],
+            remappings=[('/tf_static', '/offload_server/tf_static')],
+            output='screen',
+    )
+
+    static_odom_base_transform_node = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_odom_base_tf_publisher',
+            arguments=['0.0', '0.0', '0.0', '0', '0', '0', 'odom', 'base_link'],
+            remappings=[('/tf_static', '/offload_server/tf_static')],
+            output='screen',
+    )
+
+
+    static_base_rplidar_transform_node = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_base_rplidar_tf_publisher',
+            arguments=['0.0', '0.0', '0.0', '0', '0', '0', 'base_link', 'rplidar_link'],
+            remappings=[('/tf_static', '/offload_server/tf_static')],
+            output='screen',
+    )
+
+    # RPLIDAR static transforms
+    static_rplidar_transform_node = Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_rplidar_tf_publisher',
+            output='screen',
+            arguments=[
+                '0', '0', '0', '0', '0', '0.0',
+                'rplidar_link', [robot_name, '/rplidar_link/rplidar']],
+            remappings=[
+                ('/tf', 'tf'),
+                ('/tf_static', 'tf_static'),
+            ]
+    )
+
     # Define LaunchDescription variable
-    #sleep(60)
     ld = LaunchDescription(ARGUMENTS)
     ld.add_action(offload_server_node)
+    ld.add_action(static_map_odom_transform_node)
+    ld.add_action(static_odom_base_transform_node)
+    ld.add_action(static_base_rplidar_transform_node)
+    ld.add_action(static_rplidar_transform_node)
     return ld
