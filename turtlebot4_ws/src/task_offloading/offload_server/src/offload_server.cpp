@@ -282,7 +282,6 @@ void OffloadServer::add_job(ROS2Job j) {
 
 
 void OffloadServer::execute() {
-    static int count = 0;
     while (running_.load()) {
       //if (query_localization_node_status()) {
         fifo_lock_.lock();
@@ -297,7 +296,7 @@ void OffloadServer::execute() {
             nav2_ipose_pub_->publish(curr_job.ipose);
             nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
-            while (!FPOSE_READY && running_.load()) { if (count == 0) { count++; break;} } // CAUTION: busy looping is bad
+            //while (!FPOSE_READY && running_.load()) {} // CAUTION: busy looping is bad
 
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
