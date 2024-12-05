@@ -240,6 +240,9 @@ private:
   std::thread scheduler_;
   std::atomic<bool> running_;
 
+  // Execute work function for non-blocking threading
+  void execute_worker(ROS2Job curr_job);
+
   // Mutex for accessing fifo queue
   std::mutex fifo_lock_;
 };
