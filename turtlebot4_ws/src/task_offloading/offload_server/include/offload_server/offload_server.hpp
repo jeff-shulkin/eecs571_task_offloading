@@ -204,7 +204,7 @@ private:
   rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr nav2_localization_manager_client_;
 
   // Nav2 data ready flags
-  bool FPOSE_READY;
+  bool FPOSE_READY = false;
   bool COSTMAP_READY;
   bool TRANSFORMS_READY;
 
@@ -245,6 +245,8 @@ private:
 
   // Mutex for accessing fifo queue
   std::mutex fifo_lock_;
+
+  std:: mutex FPOSE_lock;
 };
 
 }  // namespace offload_server
