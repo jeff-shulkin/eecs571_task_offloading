@@ -32,6 +32,8 @@ rclcpp_action::CancelResponse OffloadServer::handle_offload_localization_cancel(
 
 void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<GoalHandleOffloadLocalization> goal_handle)
 {
+    static uint32_t job_id = 0;
+
     RCLCPP_INFO(this->get_logger(), "Goal accepted, adding job to scheduler");
 
     // create a new job based on the received goal
@@ -43,11 +45,8 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     RCLCPP_INFO(this->get_logger(), "Server Received goal: [%f, %f]", offload_amcl_ipose_.pose.pose.position.x, offload_amcl_ipose_.pose.pose.position.y);
     RCLCPP_INFO(this->get_logger(), "Server received frame id: %s", goal->laser_scan.header.frame_id.c_str());
 
-    //goal->laser_scan.header.frame_id = std::string("offload_server/offload_server/rplidar_link/rplidar");
-    RCLCPP_INFO(this->get_logger(), "New frame id: %s", goal->laser_scan.header.frame_id.c_str());
-
     // create new job entry based on the goal
-    ROS2Job new_job_entry = {goal_handle, goal->robot_id, std::chrono::milliseconds(goal->deadline_ms), goal->laser_scan, goal->initial_pose};
+    ROS2Job new_job_entry = {goal_handle, job_id, std::chrono::milliseconds(goal->deadline_ms), goal->laser_scan, goal->initial_pose};
 
     // add new job to the scheduler;
     add_job(new_job_entry);
@@ -66,6 +65,8 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     auto request = std::make_shared<nav2_msgs::srv::ManageLifecycleNodes::Request>();
     request->command = nav2_cmd;
     auto future = nav2_localization_manager_client_->async_send_request(request);
+
+    job_id++;
 
 }
 

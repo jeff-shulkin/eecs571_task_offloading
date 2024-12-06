@@ -227,6 +227,7 @@ void OffloadServer::nav2_amcl_fpose_callback(std::shared_ptr<geometry_msgs::msg:
     offload_amcl_fpose_ = *nav2_amcl_fpose_msg;
     FPOSE_lock.lock();
     FPOSE_READY = true;
+    fpose_callback_count++;
     FPOSE_lock.unlock();
     RCLCPP_INFO(this->get_logger(), "AMCL returned fpose: [%f, %f]", offload_amcl_fpose_.pose.pose.position.x, offload_amcl_fpose_.pose.pose.position.y);
 }
@@ -319,7 +320,7 @@ void OffloadServer::execute_worker(ROS2Job curr_job) {
 
     while(running_.load()) {
       FPOSE_lock.lock();
-      if(FPOSE_READY) {
+      if(FPOSE_READY && curr_job.job_id == fpose_callback_count) {
         FPOSE_lock.unlock();
         break;
       }
@@ -361,3 +362,4 @@ void OffloadServer::stop() {
     }
     RCLCPP_INFO(this->get_logger(), "OffloadServer stopped.");
 }
+
