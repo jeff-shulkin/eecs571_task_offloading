@@ -219,7 +219,10 @@ void OffloadServer::nav2_amcl_fpose_callback(std::shared_ptr<geometry_msgs::msg:
     // Handle final pose
     RCLCPP_INFO(this->get_logger(), "received amcl pose from offload_server");
     offload_amcl_fpose_ = *nav2_amcl_fpose_msg;
+    FPOSE_lock.lock();
+    fpose_callback_count++;
     FPOSE_READY = true;
+    FPOSE_lock.unlock();
     RCLCPP_INFO(this->get_logger(), "AMCL returned fpose: [%f, %f]", offload_amcl_fpose_.pose.pose.position.x, offload_amcl_fpose_.pose.pose.position.y);
 }
 
@@ -296,7 +299,28 @@ void OffloadServer::execute() {
             nav2_ipose_pub_->publish(curr_job.ipose);
             nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
-            //while (!FPOSE_READY && running_.load()) {} // CAUTION: busy looping is bad
+            RCLCPP_INFO(this->get_logger(), "server's current job id: %d", curr_job.job_id);
+            if (curr_job.job_id < 5) {
+              RCLCPP_INFO(this->get_logger(), "initializing amcl objects. sending back dummy result");
+              auto dummy_result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
+              dummy_result->success = true;
+              dummy_result->job_id = curr_job.job_id;
+              dummy_result->exec_time = 0.0;
+              curr_job.goal_handle->succeed(dummy_result);
+              fifo_sched_.pop();
+              fifo_lock_.unlock();
+              continue;
+            }
+            while (running_.load()) {
+              FPOSE_lock.lock();
+              RCLCPP_INFO(this->get_logger(), "CURR JOB ID: %d", curr_job.job_id);
+              RCLCPP_INFO(this->get_logger(), "FPOSE CALLBACK COUNT: %d", fpose_callback_count);
+              if (curr_job.job_id == fpose_callback_count) {
+                FPOSE_lock.unlock();
+                break;
+              }
+              FPOSE_lock.unlock();
+            } // CAUTION: busy looping is bad
 
             auto end_time = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
@@ -311,6 +335,7 @@ void OffloadServer::execute() {
 
             auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
             result->success = true;
+            result->job_id = curr_job.job_id;
             result->final_pose = offload_amcl_fpose_;
             result->exec_time = static_cast<float>(duration.count()) / 1000000.0f;; // in seconds
 

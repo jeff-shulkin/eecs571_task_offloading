@@ -622,9 +622,10 @@ void Turtlebot4::low_battery_animation()
 
 void Turtlebot4::offload_localization_function_callback()
 {
+  static int job_id = 0;
   if (offload_localization_client_ != nullptr && latency_ < 75) { //  && laser_ < 75 cost_func latency only
     if (!RVIZ_RECEIVED_) {
-      RCLCPP_INFO(this->get_logger(), "Cannot offload: no initial pose has been received from Rviz");
+      RCLCPP_INFO(this->get_logger(), "Initial pose has not been received from RViz");
       return;
     }
     if (offload_status_) { // check prev offload_status
@@ -639,17 +640,19 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
     goal_msg.status = offload_status_; // Grab whether we want to offload or not from status private variable
 
-    goal_msg.initial_pose = rviz_initial_pose_;
-
     goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
     goal_msg.laser_scan.header.frame_id = "offload_server/offload_agent/rplidar_link/rplidar";
 
+    goal_msg.initial_pose = rviz_initial_pose_;
     goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
+    goal_msg.job_id = job_id;
 
     RCLCPP_INFO(this->get_logger(), "Goal Status: %d", offload_status_);
-    offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
-
-    RCLCPP_INFO(this->get_logger(), "Client has successfully sent goal[%f, %f] to action server", goal_msg.initial_pose.pose.pose.position.x, goal_msg.initial_pose.pose.pose.position.y);
+    RCLCPP_INFO(this->get_logger(), "Sent Job ID: %d", goal_msg.job_id);
+    if (goal_msg.laser_scan.range_max != 0.0) {
+      offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
+      RCLCPP_INFO(this->get_logger(), "Client has successfully sent goal[%f, %f] to action server", goal_msg.initial_pose.pose.pose.position.x, goal_msg.initial_pose.pose.pose.position.y);
+    }
   } else {
     // Run locally
     // RCLCPP_ERROR(this->get_logger(), "Offload Localization Client NULL");
@@ -663,9 +666,8 @@ void Turtlebot4::offload_localization_function_callback()
     auto goal_msg = OffloadLocalization::Goal();
     goal_msg.robot_id = robot_id_; // Grab robot id from launch parameters
     goal_msg.status = offload_status_; // Grab whether we want to offload or not from status private variable
-    // TODO: we probably need to change goal options for sending stuff on local stack
-    //offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
   }
+  job_id++;
 
 }
 
@@ -683,6 +685,7 @@ void Turtlebot4::localization_feedback_callback(GoalHandleOffloadLocalization::S
 }
 
 void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalization::WrappedResult & result){
+  RCLCPP_INFO(this->get_logger(), "Received Job ID: %d", result.result->job_id);
   switch (result.code) {
     case rclcpp_action::ResultCode::SUCCEEDED:
       break;
@@ -700,6 +703,9 @@ void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalizatio
   // Handle the result_position here!
   RCLCPP_INFO(this->get_logger(), "Result:[%f, %f] received back from offload_server", result.result->final_pose.pose.pose.position.x, result.result->final_pose.pose.pose.position.y);
   RCLCPP_INFO(this->get_logger(), "Server execution time: %f", result.result->exec_time);
+
+  // If this is the initial job, throw away the result
+  if (result.result->job_id < 6) {return;}
 
   // Store start_pose received from server to local 
   start_pose.header = result.result->final_pose.header;

@@ -73,6 +73,7 @@ namespace offload_server
 struct ROS2Job {
         const std::shared_ptr<rclcpp_action::ServerGoalHandle<task_action_interfaces::action::Offloadlocalization>> goal_handle;
         std::string agent_id;
+        uint32_t job_id;
         std::chrono::milliseconds deadline;
 	sensor_msgs::msg::LaserScan laserscan;
 	geometry_msgs::msg::PoseWithCovarianceStamped ipose;
@@ -110,7 +111,7 @@ public:
   geometry_msgs::msg::PoseWithCovarianceStamped get_offload_amcl_fpose_();
 
   bool get_FPOSE_READY_flag();
-  void set_FPOSE_READY_flag(bool value);	
+  void set_FPOSE_READY_flag(bool value);
   void add_job(ROS2Job j);
   void remove_job(ROS2Job j);
   void execute();
@@ -242,6 +243,12 @@ private:
 
   // Mutex for accessing fifo queue
   std::mutex fifo_lock_;
+
+  // Mutex for accessing FPOSE flag
+  std::mutex FPOSE_lock;
+
+  // Keep track of how many times we have entered the fpose callback
+  uint32_t fpose_callback_count = 0;
 };
 
 }  // namespace offload_server

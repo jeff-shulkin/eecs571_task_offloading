@@ -37,9 +37,6 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     // create a new job based on the received goal
     const auto goal = goal_handle->get_goal();
 
-    // update the ipose member variable to the latest data
-    offload_amcl_ipose_ = goal->initial_pose;
-
     RCLCPP_INFO(this->get_logger(), "Server Received goal: [%f, %f]", offload_amcl_ipose_.pose.pose.position.x, offload_amcl_ipose_.pose.pose.position.y);
     RCLCPP_INFO(this->get_logger(), "Server received frame id: %s", goal->laser_scan.header.frame_id.c_str());
 
@@ -47,13 +44,10 @@ void OffloadServer::handle_offload_localization_accepted(const std::shared_ptr<G
     RCLCPP_INFO(this->get_logger(), "New frame id: %s", goal->laser_scan.header.frame_id.c_str());
 
     // create new job entry based on the goal
-    ROS2Job new_job_entry = {goal_handle, goal->robot_id, std::chrono::milliseconds(goal->deadline_ms), goal->laser_scan, goal->initial_pose};
+    ROS2Job new_job_entry = {goal_handle, goal->robot_id, goal->job_id, std::chrono::milliseconds(goal->deadline_ms), goal->laser_scan, goal->initial_pose};
 
     // add new job to the scheduler;
     add_job(new_job_entry);
-
-    // update ipose to goal->ipose
-    offload_amcl_ipose_ = goal->initial_pose;
 
     offload_status_ = goal->status;
     uint8_t nav2_cmd;
