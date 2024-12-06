@@ -103,7 +103,7 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     std::bind(&OffloadServer::nav2_local_costmap_callback, this, std::placeholders::_1));
 
   // Nav2 flags
-  // FPOSE_READY = false;
+  //FPOSE_READY = false;
   COSTMAP_READY = false;
   TRANSFORMS_READY = false;
 
@@ -226,7 +226,6 @@ void OffloadServer::nav2_amcl_fpose_callback(std::shared_ptr<geometry_msgs::msg:
     RCLCPP_INFO(this->get_logger(), "received amcl pose from offload_server");
     offload_amcl_fpose_ = *nav2_amcl_fpose_msg;
     FPOSE_lock.lock();
-    FPOSE_READY = true;
     fpose_callback_count++;
     FPOSE_lock.unlock();
     RCLCPP_INFO(this->get_logger(), "AMCL returned fpose: [%f, %f]", offload_amcl_fpose_.pose.pose.position.x, offload_amcl_fpose_.pose.pose.position.y);
@@ -319,21 +318,18 @@ void OffloadServer::execute_worker(ROS2Job curr_job) {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     while(running_.load()) {
-      FPOSE_lock.lock();
-      if(FPOSE_READY && curr_job.job_id == fpose_callback_count) {
-        FPOSE_lock.unlock();
+      FPOSE_lock.lock_shared();
+      if(curr_job.job_id == fpose_callback_count) {
+        FPOSE_lock.unlock_shared();
         break;
       }
-      FPOSE_lock.unlock();
+      FPOSE_lock.unlock_shared();
     } // CAUTION: busy looping is bad
 
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
 
     RCLCPP_INFO(this->get_logger(), "received amcl pose back from nav2 stack");
-    FPOSE_lock.lock();
-    FPOSE_READY = false;
-    FPOSE_lock.unlock();
 
     auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
     result->success = true;

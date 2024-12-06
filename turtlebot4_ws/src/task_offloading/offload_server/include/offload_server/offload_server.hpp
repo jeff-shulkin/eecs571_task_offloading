@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 #include <atomic>
@@ -48,6 +49,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+
+#include <boost/lockfree/queue.hpp>
 
 #include "irobot_create_msgs/msg/wheel_status.hpp"
 #include "irobot_create_msgs/msg/lightring_leds.hpp"
@@ -237,6 +240,7 @@ private:
 
   // All scheduler data structures
   std::queue<ROS2Job> fifo_sched_;
+  //boost::lockfree::queue<ROS2Job> fifo_sched_;
   std::thread scheduler_;
   std::atomic<bool> running_;
 
@@ -246,10 +250,14 @@ private:
   // Mutex for accessing fifo queue
   std::mutex fifo_lock_;
 
-  std::mutex FPOSE_lock;
+  //std::mutex FPOSE_lock;
+  std::shared_mutex FPOSE_lock;
 
   // Count how many times we have entered the fpose callback
   uint32_t fpose_callback_count = 0;
+
+  // Count the number of threads we currently have active
+  uint32_t num_threads = 0;
 };
 
 }  // namespace offload_server
