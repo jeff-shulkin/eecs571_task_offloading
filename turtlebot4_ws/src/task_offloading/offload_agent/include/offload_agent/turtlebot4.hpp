@@ -31,6 +31,7 @@
 #include <std_srvs/srv/empty.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -281,6 +282,9 @@ private:
 
   // Store robot id
   std::string robot_id_;
+
+  // Store latest odometry message
+  nav_msgs::msg::Odometry latest_odom_msg_;
 
   // Store initial pose
   geometry_msgs::msg::Pose initial_pose_;

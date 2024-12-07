@@ -35,6 +35,7 @@
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <nav2_msgs/msg/particle_cloud.hpp>
 #include <nav2_msgs/srv/manage_lifecycle_nodes.hpp>
 #include <nav2_msgs/srv/set_initial_pose.hpp>
@@ -76,6 +77,7 @@ struct ROS2Job {
         std::string agent_id;
         uint32_t job_id;
         std::chrono::milliseconds deadline;
+        nav_msgs::msg::Odometry odom;
 	sensor_msgs::msg::LaserScan laserscan;
 	geometry_msgs::msg::PoseWithCovarianceStamped ipose;
 };
@@ -187,6 +189,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
 
   // Nav2 Publishers for server-side processing
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr nav2_odom_pub_;
   rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr nav2_laser_scan_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_ipose_pub_;
 
@@ -209,6 +212,9 @@ private:
   bool FPOSE_READY;
   bool COSTMAP_READY;
   bool TRANSFORMS_READY;
+
+  // Store latest odometry data sent from offload_agent
+  nav_msgs::msg::Odometry latest_odom_msg_;
 
   // Store latest LiDAR data sent from offload_agent
   sensor_msgs::msg::LaserScan latest_lidar_msg_;

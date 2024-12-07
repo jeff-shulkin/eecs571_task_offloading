@@ -510,7 +510,8 @@ void Turtlebot4::goalpose_callback(const geometry_msgs::msg::PointStamped::Share
 
 void Turtlebot4::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg) {
   RCLCPP_INFO(this->get_logger(), "Grabbing odom data");
-  rviz_initial_pose_.pose = odom_msg->pose;
+  //rviz_initial_pose_.pose = odom_msg->pose;
+  
 
 }
 
@@ -642,6 +643,9 @@ void Turtlebot4::offload_localization_function_callback()
 
     goal_msg.laser_scan = latest_lidar_msg_; // Grab stored laser scan data from turtlebot4
     goal_msg.laser_scan.header.frame_id = "offload_server/offload_agent/rplidar_link/rplidar";
+
+    goal_msg.odom = latest_odom_msg_;
+
 
     goal_msg.initial_pose = rviz_initial_pose_;
     goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline

@@ -111,17 +111,20 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
   running_ = true;
 
   // Publishers
-  ip_pub_ = this->create_publisher<std_msgs::msg::String>(
-    "ip",
-    rclcpp::QoS(rclcpp::KeepLast(10)));
+  rclcpp::QoS pub_qos_settings = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_default));
+  pub_qos_settings.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
+
+  nav2_odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>(
+    "odom",
+  pub_qos_settings);
 
   nav2_ipose_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
     "initialpose",
-   rclcpp::QoS(rclcpp::KeepLast(10)));
+  pub_qos_settings);
 
   nav2_laser_scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>(
     "scan",
-  rclcpp::QoS(rclcpp::KeepLast(10)));
+  pub_qos_settings);
 
   // Service clients
   nav2_initial_pose_client_ = this->create_client<nav2_msgs::srv::SetInitialPose>("/amcl/set_initial_pose");
@@ -297,6 +300,7 @@ void OffloadServer::execute() {
             curr_job.laserscan.header.stamp = this->get_clock()->now();
 
             nav2_ipose_pub_->publish(curr_job.ipose);
+            nav2_odom_pub_->publish(curr_job.odom);
             nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
             RCLCPP_INFO(this->get_logger(), "server's current job id: %d", curr_job.job_id);
