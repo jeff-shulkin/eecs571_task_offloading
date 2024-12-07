@@ -217,12 +217,12 @@ std::string OffloadServer::get_ip()
 
 void OffloadServer::nav2_amcl_fpose_callback(std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped> nav2_amcl_fpose_msg) {
     // Handle final pose
+    std::lock_guard<std::mutex> lock(FPOSE_lock);
     RCLCPP_INFO(this->get_logger(), "received amcl pose from offload_server");
     offload_amcl_fpose_ = *nav2_amcl_fpose_msg;
-    FPOSE_lock.lock();
     fpose_callback_count++;
     FPOSE_READY = true;
-    FPOSE_lock.unlock();
+    FPOSE_condition.notify_all();
     RCLCPP_INFO(this->get_logger(), "AMCL returned fpose: [%f, %f]", offload_amcl_fpose_.pose.pose.position.x, offload_amcl_fpose_.pose.pose.position.y);
 }
 
@@ -300,7 +300,7 @@ void OffloadServer::execute() {
             nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
             RCLCPP_INFO(this->get_logger(), "server's current job id: %d", curr_job.job_id);
-            if (curr_job.job_id < 5) {
+            if (curr_job.job_id < 6) {
               RCLCPP_INFO(this->get_logger(), "initializing amcl objects. sending back dummy result");
               auto dummy_result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
               dummy_result->success = true;
@@ -312,14 +312,17 @@ void OffloadServer::execute() {
               continue;
             }
             while (running_.load()) {
-              FPOSE_lock.lock();
-              RCLCPP_INFO(this->get_logger(), "CURR JOB ID: %d", curr_job.job_id);
-              RCLCPP_INFO(this->get_logger(), "FPOSE CALLBACK COUNT: %d", fpose_callback_count);
-              if (curr_job.job_id == fpose_callback_count) {
-                FPOSE_lock.unlock();
+              //FPOSE_lock.lock();
+              //RCLCPP_INFO(this->get_logger(), "CURR JOB ID: %d", curr_job.job_id);
+              //RCLCPP_INFO(this->get_logger(), "FPOSE CALLBACK COUNT: %d", fpose_callback_count);
+              {
+                std::unique_lock<std::mutex> lock(FPOSE_lock);
+                if (!FPOSE_READY) {
+                  FPOSE_condition.wait(lock, [this]() {return FPOSE_READY;});
+                }
+                RCLCPP_INFO(this->get_logger(), "FPOSE READY: %d", FPOSE_READY);
                 break;
               }
-              FPOSE_lock.unlock();
             } // CAUTION: busy looping is bad
 
             auto end_time = std::chrono::high_resolution_clock::now();

@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 #include <string>
 #include <vector>
 #include <atomic>
@@ -246,6 +247,9 @@ private:
 
   // Mutex for accessing FPOSE flag
   std::mutex FPOSE_lock;
+
+  // Condition variable for safely accessing FPOSE_READY
+  std::condition_variable FPOSE_condition;
 
   // Keep track of how many times we have entered the fpose callback
   uint32_t fpose_callback_count = 0;
