@@ -290,6 +290,8 @@ Turtlebot4::Turtlebot4()
     leds_ = std::make_unique<Leds>(node_handle_);
   }
 
+  gen = std::mt19937(rd());
+  dist = std::uniform_real_distribution<>(-4.0, 4.0);
   run();
 }
 
@@ -648,6 +650,11 @@ void Turtlebot4::offload_localization_function_callback()
 
 
     goal_msg.initial_pose = rviz_initial_pose_;
+
+    // For testing, randomize the initial pose coordinates
+    goal_msg.initial_pose.pose.pose.position.x = dist(gen);
+    goal_msg.initial_pose.pose.pose.position.y = dist(gen);
+
     goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
     goal_msg.job_id = job_id;
 

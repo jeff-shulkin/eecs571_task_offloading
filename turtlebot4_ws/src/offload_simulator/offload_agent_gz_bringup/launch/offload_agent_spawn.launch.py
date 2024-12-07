@@ -315,7 +315,7 @@ def generate_launch_description():
 
     # Offloaded Localization
     offload_localization = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([localization_launch]),
+        PythonLaunchDescriptionSource([offload_localization_launch]),
         launch_arguments=[
             ('namespace', "offload_server"),
             ('use_sim_time', use_sim_time),

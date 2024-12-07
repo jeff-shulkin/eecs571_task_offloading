@@ -24,6 +24,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <random>
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/battery_state.hpp>
@@ -320,6 +321,10 @@ private:
   std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
 
+  // Pseudorandom number generator for giving random pose values
+  std::random_device rd;
+  std::mt19937 gen;
+  std::uniform_real_distribution<> dist;
 
   // Turtlebot4 Model
   Turtlebot4Model model_;

@@ -259,6 +259,7 @@ private:
 
   // Keep track of how many times we have entered the fpose callback
   uint32_t fpose_callback_count = 0;
+
 };
 
 }  // namespace offload_server
