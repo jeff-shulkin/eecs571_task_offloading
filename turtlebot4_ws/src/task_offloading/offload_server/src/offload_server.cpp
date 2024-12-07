@@ -319,6 +319,11 @@ void OffloadServer::execute() {
               //FPOSE_lock.lock();
               //RCLCPP_INFO(this->get_logger(), "CURR JOB ID: %d", curr_job.job_id);
               //RCLCPP_INFO(this->get_logger(), "FPOSE CALLBACK COUNT: %d", fpose_callback_count);
+              
+              auto curr = std::chrono::high_resolution_clock::now();
+              auto curr_duration = std::chrono::duration_cast<std::chrono::microseconds>(curr - start_time).count();
+              if (curr_duration >= 2000000) { break;}
+
               {
                 std::unique_lock<std::mutex> lock(FPOSE_lock);
                 if (!FPOSE_READY) {

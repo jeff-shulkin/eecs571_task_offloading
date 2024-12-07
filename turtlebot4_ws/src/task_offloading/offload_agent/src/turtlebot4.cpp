@@ -655,6 +655,8 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.initial_pose.pose.pose.position.x = dist(gen);
     goal_msg.initial_pose.pose.pose.position.y = dist(gen);
 
+    RCLCPP_INFO(this->get_logger(), "rand pose=[%f,%f]", goal_msg.initial_pose.pose.pose.position.x, goal_msg.initial_pose.pose.pose.position.y);
+
     goal_msg.deadline_ms = 100; // LiDAR publishes at 10 Hz, so 100 ms deadline
     goal_msg.job_id = job_id;
 
