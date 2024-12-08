@@ -2,6 +2,7 @@
 string robot_id
 int32 job_id
 bool status
+nav_msgs/OccupancyGrid map
 nav_msgs/Odometry odom
 geometry_msgs/PoseWithCovarianceStamped initial_pose
 sensor_msgs/LaserScan laser_scan
@@ -9,6 +10,7 @@ int32 deadline_ms # deadline in milliseconds. Can be 100 ms/200 ms (10 Hz vs 5 H
 ---
 # Result Definition
 bool success
+string robot_id
 int32 job_id
 geometry_msgs/PoseWithCovarianceStamped final_pose # Final pose calculated by AMCL
 geometry_msgs/TransformStamped final_map_to_odom # map->odom transform

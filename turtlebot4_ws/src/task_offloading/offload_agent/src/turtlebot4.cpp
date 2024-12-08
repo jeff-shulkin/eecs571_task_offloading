@@ -196,6 +196,11 @@ Turtlebot4::Turtlebot4()
     rclcpp::SensorDataQoS(),
     std::bind(&Turtlebot4::odom_callback, this, std::placeholders::_1));
 
+  map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+   "map",
+   rclcpp::SensorDataQoS(),
+   std::bind(&Turtlebot4::map_callback, this, std::placeholders::_1));
+
   // Publishers
   ip_pub_ = this->create_publisher<std_msgs::msg::String>(
     "ip",
@@ -203,6 +208,10 @@ Turtlebot4::Turtlebot4()
 
   function_call_pub_ = this->create_publisher<std_msgs::msg::String>(
     "function_calls",
+    rclcpp::QoS(rclcpp::KeepLast(10)));
+
+  amcl_pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "amcl_pose",
     rclcpp::QoS(rclcpp::KeepLast(10)));
 
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -512,9 +521,14 @@ void Turtlebot4::goalpose_callback(const geometry_msgs::msg::PointStamped::Share
 
 void Turtlebot4::odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg) {
   RCLCPP_INFO(this->get_logger(), "Grabbing odom data");
-  //rviz_initial_pose_.pose = odom_msg->pose;
-  
+  RCLCPP_INFO(this->get_logger(), "Odom frame id: %s", odom_msg->header.frame_id.c_str());
+  latest_odom_msg_ = *odom_msg;
+}
 
+void Turtlebot4::map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr map_msg) {
+  RCLCPP_INFO(this->get_logger(), "Grabbing map data");
+  RCLCPP_INFO(this->get_logger(), "Map frame id: %s", map_msg->header.frame_id.c_str());
+  latest_map_msg_ = *map_msg;
 }
 
 /**
@@ -647,7 +661,7 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.laser_scan.header.frame_id = "offload_server/offload_agent/rplidar_link/rplidar";
 
     goal_msg.odom = latest_odom_msg_;
-
+    goal_msg.odom.header.frame_id = "offload_server/odom";
 
     goal_msg.initial_pose = rviz_initial_pose_;
 
@@ -661,7 +675,7 @@ void Turtlebot4::offload_localization_function_callback()
     goal_msg.job_id = job_id;
 
     RCLCPP_INFO(this->get_logger(), "Goal Status: %d", offload_status_);
-    RCLCPP_INFO(this->get_logger(), "Sent Job ID: %d", goal_msg.job_id);
+    RCLCPP_INFO(this->get_logger(), "%s sent Job ID: %d", goal_msg.robot_id.c_str(), goal_msg.job_id);
     if (goal_msg.laser_scan.range_max != 0.0) {
       offload_localization_client_->async_send_goal(goal_msg, offload_localization_send_goal_options_);
       RCLCPP_INFO(this->get_logger(), "Client has successfully sent goal[%f, %f] to action server", goal_msg.initial_pose.pose.pose.position.x, goal_msg.initial_pose.pose.pose.position.y);
@@ -698,7 +712,7 @@ void Turtlebot4::localization_feedback_callback(GoalHandleOffloadLocalization::S
 }
 
 void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalization::WrappedResult & result){
-  RCLCPP_INFO(this->get_logger(), "Received Job ID: %d", result.result->job_id);
+  RCLCPP_INFO(this->get_logger(), "%s received Job ID: %d", result.result->robot_id.c_str(), result.result->job_id);
   switch (result.code) {
     case rclcpp_action::ResultCode::SUCCEEDED:
       break;
@@ -715,10 +729,11 @@ void Turtlebot4::localization_result_callback(const GoalHandleOffloadLocalizatio
 
   // Handle the result_position here!
   RCLCPP_INFO(this->get_logger(), "Result:[%f, %f] received back from offload_server", result.result->final_pose.pose.pose.position.x, result.result->final_pose.pose.pose.position.y);
-  RCLCPP_INFO(this->get_logger(), "Server execution time: %f", result.result->exec_time);
+  RCLCPP_INFO(this->get_logger(), "server execution time: %f", result.result->exec_time);
 
   // If this is the initial job, throw away the result
-  if (result.result->job_id < 6) {return;}
+  if (result.result->job_id < 10) {return;}
+  amcl_pose_pub_->publish(result.result->final_pose);
 
   // Store start_pose received from server to local 
   start_pose.header = result.result->final_pose.header;

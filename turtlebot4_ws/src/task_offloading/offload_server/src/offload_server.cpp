@@ -126,6 +126,10 @@ OffloadServer::OffloadServer(const rclcpp::NodeOptions & options)
     "scan",
   pub_qos_settings);
 
+  nav2_map_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+    "map",
+  rclcpp::QoS(rclcpp::KeepLast(10)));
+
   // Service clients
   nav2_initial_pose_client_ = this->create_client<nav2_msgs::srv::SetInitialPose>("/amcl/set_initial_pose");
   // Transform buffer and listener
@@ -294,20 +298,37 @@ void OffloadServer::execute() {
         if (!fifo_sched_.empty()) {
             ROS2Job curr_job = fifo_sched_.front();
 
+            RCLCPP_INFO(this->get_logger(), "server's current job id: %d", curr_job.job_id);
             RCLCPP_INFO(this->get_logger(), "publishing initial pose and LiDAR data to offload_server nav2 stack");
 
             auto start_time = std::chrono::high_resolution_clock::now();
             curr_job.laserscan.header.stamp = this->get_clock()->now();
 
+            {
+              std::lock_guard<std::mutex> lock(FPOSE_lock);
+              FPOSE_READY = false;
+            }
+
+            nav2_map_pub_->publish(curr_job.map);
             nav2_ipose_pub_->publish(curr_job.ipose);
+            rclcpp::sleep_for(std::chrono::milliseconds(10));
             nav2_odom_pub_->publish(curr_job.odom);
             nav2_laser_scan_pub_->publish(curr_job.laserscan);
 
-            RCLCPP_INFO(this->get_logger(), "server's current job id: %d", curr_job.job_id);
-            if (curr_job.job_id < 6) {
+            if (curr_job.job_id < 10) {
+              //for (int i = 0; i < 10; ++i) { nav2_laser_scan_pub_->publish(curr_job.laserscan); }
+              //rclcpp::sleep_for(std::chrono::milliseconds(6000));
+              //RCLCPP_INFO(this->get_logger(), "retransmitting first laser scan");
+              //for (int i = 0; i < 20; ++i) {
+              //  nav2_map_pub_->publish(curr_job.map);
+              //  nav2_ipose_pub_->publish(curr_job.ipose);
+              //  nav2_odom_pub_->publish(curr_job.odom);
+              //  nav2_laser_scan_pub_->publish(curr_job.laserscan);
+              //}
               RCLCPP_INFO(this->get_logger(), "initializing amcl objects. sending back dummy result");
               auto dummy_result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
               dummy_result->success = true;
+              dummy_result->robot_id = curr_job.robot_id;
               dummy_result->job_id = curr_job.job_id;
               dummy_result->exec_time = 0.0;
               curr_job.goal_handle->succeed(dummy_result);
@@ -319,17 +340,19 @@ void OffloadServer::execute() {
               //FPOSE_lock.lock();
               //RCLCPP_INFO(this->get_logger(), "CURR JOB ID: %d", curr_job.job_id);
               //RCLCPP_INFO(this->get_logger(), "FPOSE CALLBACK COUNT: %d", fpose_callback_count);
-              
+
               auto curr = std::chrono::high_resolution_clock::now();
               auto curr_duration = std::chrono::duration_cast<std::chrono::microseconds>(curr - start_time).count();
-              if (curr_duration >= 2000000) { break;}
-
+              //if (curr_duration >= 2000000) { break;}
               {
                 std::unique_lock<std::mutex> lock(FPOSE_lock);
+                RCLCPP_INFO(this->get_logger(), "fpose_callback_count before wait: %d", fpose_callback_count);
                 if (!FPOSE_READY) {
-                  FPOSE_condition.wait(lock, [this]() {return FPOSE_READY;});
+                  FPOSE_condition.wait(lock, [this, curr_job]() {return FPOSE_READY;});
                 }
                 RCLCPP_INFO(this->get_logger(), "FPOSE READY: %d", FPOSE_READY);
+                RCLCPP_INFO(this->get_logger(), "fpose callback count: %d", fpose_callback_count);
+                FPOSE_READY = false;
                 break;
               }
             } // CAUTION: busy looping is bad
@@ -343,10 +366,13 @@ void OffloadServer::execute() {
             }
 
             //RCLCPP_INFO(this->get_logger(), "received amcl pose back from nav2 stack");
-            FPOSE_READY = false;
-
+            //{
+            //  std::lock_guard<std::mutex> lock(FPOSE_lock);
+            //  FPOSE_READY = false;
+            //}
             auto result = std::make_shared<task_action_interfaces::action::Offloadlocalization::Result>();
             result->success = true;
+            result->robot_id = curr_job.robot_id;
             result->job_id = curr_job.job_id;
             result->final_pose = offload_amcl_fpose_;
             result->exec_time = static_cast<float>(duration.count()) / 1000000.0f;; // in seconds
@@ -363,7 +389,7 @@ void OffloadServer::execute() {
             // send result back to agent
             curr_job.goal_handle->succeed(result);
 
-            RCLCPP_INFO(this->get_logger(), "sent goal back to offload_agent");
+            RCLCPP_INFO(this->get_logger(), "sent goal back to %s", curr_job.robot_id.c_str());
             fifo_sched_.pop();
         }
         else {

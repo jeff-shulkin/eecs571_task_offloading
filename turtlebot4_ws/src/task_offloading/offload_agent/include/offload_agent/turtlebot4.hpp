@@ -33,6 +33,7 @@
 #include <std_srvs/srv/trigger.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -127,6 +128,7 @@ private:
   void initialpose_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr initialpose_msg);
   void goalpose_callback(const geometry_msgs::msg::PointStamped::SharedPtr goalpose_msg);
   void odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg);
+  void map_callback(const nav_msgs::msg::OccupancyGrid::SharedPtr map_msg);
 
   // Function callbacks
   void offload_localization_function_callback();
@@ -258,6 +260,7 @@ private:
   rclcpp::TimerBase::SharedPtr power_off_timer_;
 
   // Subscribers
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr lidar_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initialpose_sub_;
   rclcpp::Subscription<sensor_msgs::msg::BatteryState>::SharedPtr battery_sub_;
@@ -269,6 +272,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
 
   // Publishers
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr amcl_pose_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr ip_pub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
 
@@ -292,6 +296,9 @@ private:
 
   // Store last lidar message
   sensor_msgs::msg::LaserScan latest_lidar_msg_;
+
+  // Store latest map
+  nav_msgs::msg::OccupancyGrid latest_map_msg_;
 
   // Store whether or not we want to offload localization
   bool offload_status_;

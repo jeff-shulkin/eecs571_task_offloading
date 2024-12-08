@@ -74,12 +74,13 @@ namespace offload_server
 
 struct ROS2Job {
         const std::shared_ptr<rclcpp_action::ServerGoalHandle<task_action_interfaces::action::Offloadlocalization>> goal_handle;
-        std::string agent_id;
+        std::string robot_id;
         uint32_t job_id;
         std::chrono::milliseconds deadline;
         nav_msgs::msg::Odometry odom;
 	sensor_msgs::msg::LaserScan laserscan;
 	geometry_msgs::msg::PoseWithCovarianceStamped ipose;
+        nav_msgs::msg::OccupancyGrid map;
 };
 
 // Custom priority queue job comparator
@@ -189,6 +190,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr function_call_pub_;
 
   // Nav2 Publishers for server-side processing
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr nav2_map_pub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr nav2_odom_pub_;
   rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr nav2_laser_scan_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr nav2_ipose_pub_;
